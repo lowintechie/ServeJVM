@@ -20,10 +20,14 @@ $logFile = "$installDir\install.log"
 try {
     if (-not (Test-Path -Path $installDir)) {
         New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+        Start-Sleep -Milliseconds 500  # Wait to ensure the directory is fully created
+        if (-not (Test-Path -Path $installDir)) {
+            throw "Directory $installDir could not be created."
+        }
         Write-Output "Created installation directory at $installDir."
     }
 } catch {
-    Write-Output "ERROR: Failed to create installation directory at $installDir."
+    Write-Output "ERROR: Failed to create installation directory at $installDir. $_"
     exit 1
 }
 
@@ -35,6 +39,13 @@ function Log-Message {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logEntry = "$timestamp - $message"
     Write-Output $logEntry
+
+    # Ensure the log file directory exists before writing
+    if (-not (Test-Path -Path $installDir)) {
+        New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+        Start-Sleep -Milliseconds 500  # Ensure the directory creation process completes
+    }
+
     Add-Content -Path $logFile -Value $logEntry
 }
 
