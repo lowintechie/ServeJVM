@@ -6,26 +6,6 @@
     This PowerShell script is part of the ServeJVM system, which allows users to manage multiple Java versions on their machine.
     It provides functionality to install, use, list, and uninstall different versions of  Java.
 
-.PARAMETER command
-    The main command to execute (e.g., install, use, list, uninstall).
-
-.PARAMETER version
-    The Java version to install, use, or uninstall. This parameter is required for the install, use, and uninstall commands.
-
-.EXAMPLE
-    ./jvm.ps1 install 11
-    Installs  Java 11.
-
-    ./jvm.ps1 use 11
-    Switches to  Java 11.
-
-    ./jvm.ps1 list
-    Lists all installed Java versions.
-
-    ./jvm.ps1 uninstall 11
-    Uninstalls  Java 11.
-
-.NOTES
     Author: LOWIN TECHIE
     Version: 1.0
     Date: 2024-08-16
@@ -105,7 +85,6 @@ function Install-Java {
         # Enhanced curl command for faster download
         $curlCommand = "curl --ssl-no-revoke -L --max-time 180 --retry 3 --retry-delay 10 --speed-limit 100000 --speed-time 30 --output `"$tmpFile`" `"$url`""
 
-        # Execute the command
         Invoke-Expression $curlCommand
         Log-Message "Downloaded  Java $version using curl."
     } catch {
@@ -146,7 +125,7 @@ function Install-Java {
     Log-Message " Java $version installed successfully."
 }
 
-
+# Function to stwitch to a specific Java version
 function Use-Java {
     param (
         [string]$version
@@ -215,9 +194,6 @@ function Use-Java {
     }
 }
 
-
-
-
 # List installed versions
 function List-Java {
     try {
@@ -233,6 +209,7 @@ function List-Java {
     }
 }
 
+# Uninstall a specific Java version
 function Uninstall-Java {
     param (
         [string]$version
@@ -277,18 +254,17 @@ function Uninstall-Java {
     }
 }
 
-
 # Function to print help/usage information
 function Show-Usage {
     Write-Host "ServeJVM Command-Line Interface" -ForegroundColor Cyan
     Write-Host "=================================" -ForegroundColor Cyan
-    Write-Host "Usage: jvm {install|use|list|uninstall} [version]" -ForegroundColor Yellow
+    Write-Host "Usage: jvm <command> [...args]" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Commands:" -ForegroundColor Cyan
-    Write-Host "  install   [version]  - Install the specified Java version." -ForegroundColor Green
-    Write-Host "  use       [version]  - Switch to the specified Java version." -ForegroundColor Green
-    Write-Host "  list                  - List all installed Java versions." -ForegroundColor Green
-    Write-Host "  uninstall [version]  - Uninstall the specified Java version." -ForegroundColor Green
+    Write-Host "  install   [version]               Install the specified Java version." -ForegroundColor Green
+    Write-Host "  use       [version]               Switch to the specified Java version." -ForegroundColor Green
+    Write-Host "  list                              List all installed Java versions." -ForegroundColor Green
+    Write-Host "  uninstall [version]               Uninstall the specified Java version." -ForegroundColor Green
     Write-Host ""
     Write-Host "Example:" -ForegroundColor Cyan
     Write-Host "  jvm install 11" -ForegroundColor Yellow
@@ -296,13 +272,14 @@ function Show-Usage {
     Write-Host "  jvm list" -ForegroundColor Yellow
     Write-Host "  jvm uninstall 11" -ForegroundColor Yellow
     Write-Host ""
+    Write-Host "Learn more about ServeJVM: https://github.com/lowinn/ServeJVM/blob/main/README.md" -ForegroundColor Magenta
 }
 
 # Enhanced CLI Interface
 switch ($command) {
     "install" {
         if ($version) {
-            Write-Host "Installing  Java $version..." -ForegroundColor Cyan
+            Write-Host "Installing Java $version..." -ForegroundColor Cyan
             Install-Java -version $version
             Write-Host "Installation complete." -ForegroundColor Green
         } else {
@@ -312,7 +289,7 @@ switch ($command) {
     }
     "use" {
         if ($version) {
-            Write-Host "Switching to  Java $version..." -ForegroundColor Cyan
+            Write-Host "Switching to Java $version..." -ForegroundColor Cyan
             Use-Java -version $version
             Write-Host "Switched to Java $version." -ForegroundColor Green
         } else {
@@ -326,7 +303,7 @@ switch ($command) {
     }
     "uninstall" {
         if ($version) {
-            Write-Host "Uninstalling  Java $version..." -ForegroundColor Cyan
+            Write-Host "Uninstalling Java $version..." -ForegroundColor Cyan
             Uninstall-Java -version $version
             Write-Host "Uninstallation complete." -ForegroundColor Green
         } else {
@@ -335,9 +312,8 @@ switch ($command) {
         }
     }
     default {
-        Write-Host "Error: Invalid command '$command'." -ForegroundColor Red
-        Log-Message "Invalid command used: $command" "ERROR"
         Show-Usage
     }
 }
+
 
