@@ -91,9 +91,9 @@ function Install-Java {
         Log-Message "Attempting to download from $url"
 
         # Enhanced curl command for faster download
-        $curlCommand = "curl -L --max-time 180 --retry 3 --retry-delay 10 --output "$tmpFile" "$url""
-
+        $curlCommand = "curl -L --output "$tmpFile" "$url""
         Invoke-Expression $curlCommand
+
         Log-Message "Downloaded  Java $version using curl."
     } catch {
         Log-Message "Failed to download  Java $version from $url. Error details: $_" "ERROR"
@@ -297,10 +297,8 @@ function Update-ServeJVM {
     try {
         # Clone the repository or pull the latest changes
         if (-Not (Test-Path $serveJvmDir)) {
-            Write-Host "Cloning the ServeJVM repository..." -ForegroundColor Cyan
             git clone $repoUrl $serveJvmDir
         } else {
-            Write-Host "Pulling the latest changes..." -ForegroundColor Cyan
             Set-Location $serveJvmDir
             git pull
         }
