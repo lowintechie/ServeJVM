@@ -1,4 +1,18 @@
 #!/bin/bash
+# -----------------------------------------------------------------------------
+# SYNOPSIS
+#     ServeJVM Command-Line Interface Script
+#
+# DESCRIPTION
+#     This script manages multiple Java versions using ServeJVM on Unix-based
+#     systems. It allows you to install, use, list, and uninstall different
+#     versions of Amazon Corretto Java.
+#
+# NOTES
+#     Author: LOWIN TECHIE
+#     Version: 1.0
+#     Date: 2024-08-16
+# -----------------------------------------------------------------------------
 
 # Log file location
 LOG_FILE="$HOME/.jvm_manager/jvm-manager.log"
@@ -139,7 +153,7 @@ case "$1" in
         echo "  help                            Show this help text"
         echo
         echo "Learn more about ServeJVM:       https://github.com/lowinn/ServeJVM/blob/main/README.md"
-        echo "Join our Community:              https://servejvm.example.com/community"
+        echo "Join our Community:              https://github.com/lowinn/ServeJVM/discussions"
         ;;
 
     *)

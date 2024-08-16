@@ -15,7 +15,7 @@ ServeJVM is a powerful and intuitive Java Version Manager. It allows developers 
 ### Prerequisites
 
 - **Git**: Ensure Git is installed on your system for cloning the repository.
-- **cURL**: Required for Linux and macOS to download Java versions.
+- **cURL or Wget**: Required for Linux and macOS to download Java versions.
 - **PowerShell**: Required for Windows users.
 
 ### Installation Instructions
@@ -23,59 +23,49 @@ ServeJVM is a powerful and intuitive Java Version Manager. It allows developers 
 #### Linux / macOS
 
 1. **Open your terminal**.
-2. **Clone the ServeJVM repository**:
+2. **Install ServeJVM using cURL or Wget**:
 
+    Using `cURL`:
     ```bash
-    git clone https://github.com/lowinn/ServeJVM.git $HOME/.serveJVM
+    curl -o- https://raw.githubusercontent.com/lowinn/ServeJVM/main/install.sh | bash
     ```
 
-3. **Run the installation script**:
-
+    Using `Wget`:
     ```bash
-    $HOME/.serveJVM/install.sh
+    wget -qO- https://raw.githubusercontent.com/lowinn/ServeJVM/main/install.sh | bash
     ```
 
-4. **Update your PATH**:
-
-    The installation script will automatically add ServeJVM to your PATH by modifying your `.bashrc`. If you're using a different shell (like Zsh), you may need to update the corresponding profile file (`.zshrc` for Zsh).
-
-5. **Restart your terminal**:
+3. **Restart your terminal**:
 
     Restart your terminal or run `source ~/.bashrc` (or `source ~/.zshrc` for Zsh) to apply the changes.
 
-6. **Verify the installation**:
+4. **Verify the installation**:
 
     Run the following command to verify that ServeJVM is installed correctly:
 
     ```bash
-    jvm-manager list
+    jvm list
     ```
 
 #### Windows
 
 1. **Open PowerShell as Administrator**.
-2. **Clone the ServeJVM repository**:
+2. **Install ServeJVM using PowerShell**:
 
     ```powershell
-    git clone https://github.com/lowinn/ServeJVM.git "$env:USERPROFILE\.serveJVM"
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lowinn/ServeJVM/main/install.ps1" -OutFile "$env:TEMP\install.ps1"; & "$env:TEMP\install.ps1"
     ```
 
-3. **Run the installation script**:
+3. **Restart your terminal**:
 
-    ```powershell
-    $env:USERPROFILE\.serveJVM\install.ps1
-    ```
+    After running the script, restart your terminal or log out and back in to apply the changes.
 
-4. **Update your PATH**:
-
-    The installation script will automatically update your PATH environment variable. You may need to restart your terminal or system for the changes to take effect.
-
-5. **Verify the installation**:
+4. **Verify the installation**:
 
     Run the following command to verify that ServeJVM is installed correctly:
 
     ```powershell
-    jvm-manager list
+    jvm list
     ```
 
 ## Usage
@@ -84,5 +74,49 @@ ServeJVM provides a simple command-line interface for managing Java versions. Be
 
 ### Install a Java Version
 
+To install a specific Java version, use:
+
 ```bash
-jvm-manager install <version>
+jvm install <version>
+```
+
+For example, to install Java 11:
+
+```bash
+jvm install 11
+```
+### List Installed Java Versions
+
+To list all installed Java versions, use:
+
+```bash
+jvm list
+```
+### Switch to a Java Version
+To switch to a specific Java version, use:
+```bash
+jvm use <version>
+```
+For example, to switch to Java 11:
+```bash
+jvm use 11
+```
+### Uninstall a Java Version
+To uninstall a specific Java version, use:
+```bash
+jvm uninstall <version>
+```
+For example, to uninstall Java 11:
+```bash
+jvm uninstall 11
+```
+
+### Contributing
+We welcome contributions to ServeJVM! Please feel free to submit issues, fork the repository, and make pull requests.
+
+### License
+ServeJVM is licensed under the MIT License. See the LICENSE file for more information.
+
+### Summary:
+
+This markdown content is formatted for a `README.md` file, providing clear instructions on how to install and use ServeJVM across different platforms. It also includes sections on features, prerequisites, usage, contributing, and licensing.

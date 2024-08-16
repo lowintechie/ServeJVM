@@ -1,10 +1,51 @@
+<#
+.SYNOPSIS
+    ServeJVM Command-Line Interface Script
+
+.DESCRIPTION
+    This PowerShell script is part of the ServeJVM system, which allows users to manage multiple Java versions on their machine.
+    It provides functionality to install, use, list, and uninstall different versions of  Java.
+
+.PARAMETER command
+    The main command to execute (e.g., install, use, list, uninstall).
+
+.PARAMETER version
+    The Java version to install, use, or uninstall. This parameter is required for the install, use, and uninstall commands.
+
+.EXAMPLE
+    ./jvm.ps1 install 11
+    Installs  Java 11.
+
+    ./jvm.ps1 use 11
+    Switches to  Java 11.
+
+    ./jvm.ps1 list
+    Lists all installed Java versions.
+
+    ./jvm.ps1 uninstall 11
+    Uninstalls  Java 11.
+
+.NOTES
+    Author: LOWIN TECHIE
+    Version: 1.0
+    Date: 2024-08-16
+
+    This script is part of the ServeJVM project, available at:
+    https://github.com/lowinn/ServeJVM
+
+    Please refer to the project's documentation for more details.
+
+.LINK
+    https://github.com/lowinn/ServeJVM
+#>
+
 param (
     [string]$command,
     [string]$version
 )
 
 # Define variables
-$logFile = "$env:USERPROFILE\.jvm\jvm.log"
+$logFile = "$env:USERPROFILE\.serveJVM\jvm.log"
 
 # Function to log messages
 function Log-Message {
@@ -32,8 +73,8 @@ function Install-Java {
     param (
         [string]$version
     )
-    $installDir = "$env:USERPROFILE\.jvm\versions\$version"
-    $tmpDir = "$env:USERPROFILE\.jvm\tmp"
+    $installDir = "$env:USERPROFILE\.serveJVM\versions\$version"
+    $tmpDir = "$env:USERPROFILE\.serveJVM\tmp"
     $tmpFile = "$tmpDir\corretto-$version.zip"
     $extractDir = "$tmpDir\extracted"
 
@@ -66,15 +107,15 @@ function Install-Java {
 
         # Execute the command
         Invoke-Expression $curlCommand
-        Log-Message "Downloaded Amazon Corretto Java $version using curl."
+        Log-Message "Downloaded  Java $version using curl."
     } catch {
-        Log-Message "Failed to download Amazon Corretto Java $version from $url. Error details: $_" "ERROR"
+        Log-Message "Failed to download  Java $version from $url. Error details: $_" "ERROR"
         Error-Exit "Check if the Java version $version exists and the URL is correct."
     }
 
     try {
         Expand-Archive -Path $tmpFile -DestinationPath $extractDir -ErrorAction Stop
-        Log-Message "Extracted Amazon Corretto Java $version to $extractDir."
+        Log-Message "Extracted  Java $version to $extractDir."
 
         # Handle nested directory structure
         $extractedContent = Get-ChildItem -Path $extractDir | Select-Object -First 1
@@ -90,7 +131,7 @@ function Install-Java {
             Error-Exit "Extraction failed: no content found in the archive."
         }
     } catch {
-        Log-Message "Failed to extract or move Amazon Corretto Java $version." "ERROR"
+        Log-Message "Failed to extract or move  Java $version." "ERROR"
         Error-Exit "Extraction or move operation failed. Ensure that the downloaded file is a valid ZIP archive."
     }
 
@@ -102,7 +143,7 @@ function Install-Java {
         Log-Message "Failed to remove temporary files." "WARNING"
     }
 
-    Log-Message "Amazon Corretto Java $version installed successfully."
+    Log-Message " Java $version installed successfully."
 }
 
 
@@ -111,13 +152,13 @@ function Use-Java {
         [string]$version
     )
 
-    $installDir = "$env:USERPROFILE\.jvm\versions\$version"
+    $installDir = "$env:USERPROFILE\.serveJVM\versions\$version"
 
     if (Test-Path $installDir) {
         try {
             # Start of the process
-            Log-Message "Setting up Amazon Corretto Java $version..."
-            Write-Host "Setting up Amazon Corretto Java $version..." -ForegroundColor Cyan
+            Log-Message "Setting up  Java $version..."
+            Write-Host "Setting up  Java $version..." -ForegroundColor Cyan
 
             $steps = 5
             $currentStep = 0
@@ -144,7 +185,7 @@ function Use-Java {
             # Step 3: Clean up old PATH entries
             Update-Progress -activity "Cleaning up old JAVA_HOME\bin entries from PATH" -percentComplete ($currentStep / $steps * 100)
             Log-Message "Cleaning up old JAVA_HOME\bin entries from PATH."
-            $newPath = ($currentPath -split ';') -notmatch [regex]::Escape('\.jvm\versions\\') -join ';'
+            $newPath = ($currentPath -split ';') -notmatch [regex]::Escape('\.serveJVM\versions\\') -join ';'
 
             # Step 4: Update PATH with new Java version
             Update-Progress -activity "Adding new JAVA_HOME\bin to PATH" -percentComplete ($currentStep / $steps * 100)
@@ -159,18 +200,18 @@ function Use-Java {
             $env:Path = "$installDir\bin;" + ($env:Path -replace [regex]::Escape("$env:JAVA_HOME\bin;"), "")
 
             Write-Progress -Activity "Setup Complete" -Status "100% Complete" -PercentComplete 100
-            Write-Host "Switched to Amazon Corretto Java $version successfully." -ForegroundColor Green
-            Log-Message "Switched to Amazon Corretto Java $version successfully."
-            Write-Output "Switched to Amazon Corretto Java $version. Please restart your terminal session or run 'refreshenv' if using a tool like Chocolatey."
+            Write-Host "Switched to  Java $version successfully." -ForegroundColor Green
+            Log-Message "Switched to  Java $version successfully."
+            Write-Output "Switched to  Java $version. Please restart your terminal session or run 'refreshenv' if using a tool like Chocolatey."
         } catch {
-            Write-Host "Failed to set environment variables for Amazon Corretto Java $version." -ForegroundColor Red
-            Log-Message "Failed to set environment variables for Amazon Corretto Java $version. Error: $_" "ERROR"
+            Write-Host "Failed to set environment variables for  Java $version." -ForegroundColor Red
+            Log-Message "Failed to set environment variables for  Java $version. Error: $_" "ERROR"
             Error-Exit "Failed to set environment variables."
         }
     } else {
-        Write-Host "Amazon Corretto Java version $version is not installed." -ForegroundColor Red
-        Log-Message "Amazon Corretto Java version $version is not installed." "ERROR"
-        Error-Exit "Amazon Corretto Java version $version is not installed."
+        Write-Host " Java version $version is not installed." -ForegroundColor Red
+        Log-Message " Java version $version is not installed." "ERROR"
+        Error-Exit " Java version $version is not installed."
     }
 }
 
@@ -180,15 +221,15 @@ function Use-Java {
 # List installed versions
 function List-Java {
     try {
-        $versions = Get-ChildItem -Directory "$env:USERPROFILE\.jvm\versions" | ForEach-Object { $_.Name }
+        $versions = Get-ChildItem -Directory "$env:USERPROFILE\.serveJVM\versions" | ForEach-Object { $_.Name }
         if ($versions) {
             $versions | ForEach-Object { Write-Output $_ }
-            Log-Message "Listed installed Amazon Corretto Java versions."
+            Log-Message "Listed installed  Java versions."
         } else {
-            Log-Message "No Amazon Corretto Java versions installed."
+            Log-Message "No  Java versions installed."
         }
     } catch {
-        Error-Exit "Failed to list Amazon Corretto Java versions."
+        Error-Exit "Failed to list  Java versions."
     }
 }
 
@@ -196,14 +237,14 @@ function Uninstall-Java {
     param (
         [string]$version
     )
-    $installDir = "$env:USERPROFILE\.jvm\versions\$version"
+    $installDir = "$env:USERPROFILE\.serveJVM\versions\$version"
 
     if (Test-Path $installDir) {
         try {
             # Remove the installation directory
             Remove-Item -Recurse -Force $installDir -ErrorAction Stop
-            Log-Message "Amazon Corretto Java $version uninstalled successfully."
-            Write-Output "Amazon Corretto Java $version uninstalled successfully."
+            Log-Message " Java $version uninstalled successfully."
+            Write-Output " Java $version uninstalled successfully."
 
             # Clear JAVA_HOME if it is pointing to the uninstalled version
             $currentJavaHome = [System.Environment]::GetEnvironmentVariable("JAVA_HOME", [System.EnvironmentVariableTarget]::User)
@@ -228,11 +269,11 @@ function Uninstall-Java {
                 Write-Output "Cleared JAVA_HOME and updated PATH for the current session."
             }
         } catch {
-            Log-Message "Failed to uninstall Amazon Corretto Java $version. Error: $_" "ERROR"
-            Error-Exit "Failed to uninstall Amazon Corretto Java $version. Please ensure the directory is not in use."
+            Log-Message "Failed to uninstall  Java $version. Error: $_" "ERROR"
+            Error-Exit "Failed to uninstall  Java $version. Please ensure the directory is not in use."
         }
     } else {
-        Error-Exit "Amazon Corretto Java version $version is not installed."
+        Error-Exit " Java version $version is not installed."
     }
 }
 
@@ -261,7 +302,7 @@ function Show-Usage {
 switch ($command) {
     "install" {
         if ($version) {
-            Write-Host "Installing Amazon Corretto Java $version..." -ForegroundColor Cyan
+            Write-Host "Installing  Java $version..." -ForegroundColor Cyan
             Install-Java -version $version
             Write-Host "Installation complete." -ForegroundColor Green
         } else {
@@ -271,7 +312,7 @@ switch ($command) {
     }
     "use" {
         if ($version) {
-            Write-Host "Switching to Amazon Corretto Java $version..." -ForegroundColor Cyan
+            Write-Host "Switching to  Java $version..." -ForegroundColor Cyan
             Use-Java -version $version
             Write-Host "Switched to Java $version." -ForegroundColor Green
         } else {
@@ -285,7 +326,7 @@ switch ($command) {
     }
     "uninstall" {
         if ($version) {
-            Write-Host "Uninstalling Amazon Corretto Java $version..." -ForegroundColor Cyan
+            Write-Host "Uninstalling  Java $version..." -ForegroundColor Cyan
             Uninstall-Java -version $version
             Write-Host "Uninstallation complete." -ForegroundColor Green
         } else {

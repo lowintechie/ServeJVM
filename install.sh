@@ -1,49 +1,55 @@
 #!/bin/bash
+# -----------------------------------------------------------------------------
+# SYNOPSIS
+#     Installation script for ServeJVM.
+#
+# DESCRIPTION
+#     This script clones the ServeJVM repository, updates the PATH environment
+#     variable, and sets up ServeJVM for use on Unix-based systems.
+#
+# NOTES
+#     Author: LOWIN TECHIE
+#     Version: 1.0
+#     Date: 2024-08-16
+# -----------------------------------------------------------------------------
+
 
 # Define variables
 REPO_URL="https://github.com/lowinn/ServeJVM.git"
-INSTALL_DIR="$HOME/.jvm"
-LOG_FILE="$HOME/.jvm/install.log"
+INSTALL_DIR="$HOME/.serveJVM"
+LOG_FILE="$INSTALL_DIR/install.log"
 
 # Function to log messages
 log_message() {
-    echo "$(date +'%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+    local message="$1"
+    echo "$(date +'%Y-%m-%d %H:%M:%S') - $message" | tee -a "$LOG_FILE"
 }
 
 # Function to handle errors
 error_exit() {
-    log_message "ERROR: $1"
+    local message="$1"
+    log_message "ERROR: $message"
     log_message "Installation failed. Please check the log file at $LOG_FILE for more details."
     exit 1
 }
 
-# Start the installation process
+# Start installation
 log_message "Starting ServeJVM installation..."
 
 # Clone the repository
-if git clone "$REPO_URL" "$INSTALL_DIR" 2>>"$LOG_FILE"; then
+if git clone "$REPO_URL" "$INSTALL_DIR"; then
     log_message "Repository cloned successfully to $INSTALL_DIR."
 else
     error_exit "Failed to clone the repository from $REPO_URL."
 fi
 
-# Update PATH in .bashrc
-if grep -q "$INSTALL_DIR/bin" "$HOME/.bashrc"; then
-    log_message "PATH already updated in .bashrc."
-else
+# Update PATH
+if ! grep -q "$INSTALL_DIR/bin" <<< "$PATH"; then
     echo "export PATH=\"$INSTALL_DIR/bin:\$PATH\"" >> "$HOME/.bashrc"
-    log_message "Updated PATH in .bashrc."
-fi
-
-# Source .bashrc
-if source "$HOME/.bashrc"; then
-    log_message "Sourced .bashrc successfully."
+    log_message "Updated PATH in user environment."
 else
-    error_exit "Failed to source .bashrc. Please run 'source ~/.bashrc' manually."
+    log_message "PATH already contains $INSTALL_DIR/bin."
 fi
 
-# Final message to the user
-log_message "ServeJVM installed successfully. Restart your terminal or run 'source ~/.bashrc' to start using it."
-
-# End of script
-log_message "Installation completed."
+# Final message
+log_message "ServeJVM installed successfully. Restart your terminal or source your .bashrc to start using it."
