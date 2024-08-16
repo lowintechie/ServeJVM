@@ -91,7 +91,7 @@ function Install-Java {
         Log-Message "Attempting to download from $url"
 
         # Enhanced curl command for faster download
-        $curlCommand = "curl --ssl-no-revoke -L --max-time 180 --retry 3 --retry-delay 10 --speed-limit 100000 --speed-time 30 --output `"$tmpFile`" `"$url`""
+        $curlCommand = "curl -L --max-time 180 --retry 3 --retry-delay 10 --output "$tmpFile" "$url""
 
         Invoke-Expression $curlCommand
         Log-Message "Downloaded  Java $version using curl."
