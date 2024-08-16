@@ -26,12 +26,20 @@ param (
 
 # Define variables
 $logFile = "$env:USERPROFILE\.serveJVM\jvm.log"
-
+$repoUrl = "https://github.com/lowinn/ServeJVM.git"
+$installDir = "$env:USERPROFILE\.serveJVM"
+$serveJvmDir = "$installDir\ServeJVM"
+$binDir = "$installDir\bin"
+$scriptFile = "$binDir\jvm.ps1"
+$logFile = "$installDir\install.log"
+$versionFile = "$installDir\version.txt"
+$currentVersion = "1.1"
+$updateUrl = "https://raw.githubusercontent.com/lowinn/ServeJVM/main/install.ps1"
 # Function to log messages
 function Log-Message {
     param (
         [string]$message,
-        [string]$level = "INFO"  # Default level is INFO
+        [string]$level = "INFO"
     )
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logEntry = "$timestamp [$level] - $message"
@@ -150,62 +158,65 @@ function Use-Java {
                 $currentStep++
                 Write-Progress -Activity $activity -Status "$percentComplete% Complete" -PercentComplete $percentComplete
             }
-
             # Step 1: Set JAVA_HOME
-            Update-Progress -activity "Setting JAVA_HOME environment variable" -percentComplete ($currentStep / $steps * 100)
-            Log-Message "Setting JAVA_HOME environment variable to $installDir"
+            Update-Progress -activity "Setting JAVA_HOME" -percentComplete ($currentStep / $steps * 100)
+            Log-Message "Setting JAVA_HOME to $installDir"
             [System.Environment]::SetEnvironmentVariable("JAVA_HOME", $installDir, [System.EnvironmentVariableTarget]::User)
 
             # Step 2: Retrieve current PATH
-            Update-Progress -activity "Retrieving current PATH environment variable" -percentComplete ($currentStep / $steps * 100)
-            Log-Message "Retrieving current PATH environment variable."
+            Update-Progress -activity "Retrieving PATH" -percentComplete ($currentStep / $steps * 100)
+            Log-Message "Retrieving PATH."
             $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::User)
 
             # Step 3: Clean up old PATH entries
-            Update-Progress -activity "Cleaning up old JAVA_HOME\bin entries from PATH" -percentComplete ($currentStep / $steps * 100)
-            Log-Message "Cleaning up old JAVA_HOME\bin entries from PATH."
+            Update-Progress -activity "Cleaning old PATH entries" -percentComplete ($currentStep / $steps * 100)
+            Log-Message "Cleaning old PATH entries."
             $newPath = ($currentPath -split ';') -notmatch [regex]::Escape('\.serveJVM\versions\\') -join ';'
 
             # Step 4: Update PATH with new Java version
-            Update-Progress -activity "Adding new JAVA_HOME\bin to PATH" -percentComplete ($currentStep / $steps * 100)
-            Log-Message "Adding $installDir\bin to the PATH environment variable."
+            Update-Progress -activity "Updating PATH" -percentComplete ($currentStep / $steps * 100)
+            Log-Message "Adding $installDir\bin to PATH."
             $newPath = "$installDir\bin;$newPath"
             [System.Environment]::SetEnvironmentVariable("Path", $newPath, [System.EnvironmentVariableTarget]::User)
 
             # Step 5: Update session variables
-            Update-Progress -activity "Updating JAVA_HOME and PATH for the current session" -percentComplete ($currentStep / $steps * 100)
-            Log-Message "Updating JAVA_HOME and PATH for the current session."
+            Update-Progress -activity "Updating session variables" -percentComplete ($currentStep / $steps * 100)
+            Log-Message "Updating session JAVA_HOME and PATH."
             $env:JAVA_HOME = $installDir
             $env:Path = "$installDir\bin;" + ($env:Path -replace [regex]::Escape("$env:JAVA_HOME\bin;"), "")
 
             Write-Progress -Activity "Setup Complete" -Status "100% Complete" -PercentComplete 100
-            Write-Host "Switched to  Java $version successfully." -ForegroundColor Green
-            Log-Message "Switched to  Java $version successfully."
-            Write-Output "Switched to  Java $version. Please restart your terminal session or run 'refreshenv' if using a tool like Chocolatey."
-        } catch {
-            Write-Host "Failed to set environment variables for  Java $version." -ForegroundColor Red
-            Log-Message "Failed to set environment variables for  Java $version. Error: $_" "ERROR"
-            Error-Exit "Failed to set environment variables."
-        }
-    } else {
-        Write-Host " Java version $version is not installed." -ForegroundColor Red
-        Log-Message " Java version $version is not installed." "ERROR"
-        Error-Exit " Java version $version is not installed."
+            Write-Host "Switched to Java $version successfully." -ForegroundColor Green
+            Log-Message "Switched to Java $version."
+            Write-Output "Switched to Java $version. Please restart your terminal session or run 'refreshenv' if using a tool like Chocolatey."
+            } catch {
+                Write-Host "Failed to set environment variables for Java $version." -ForegroundColor Red
+                Log-Message "Failed to set variables for Java $version. Error: $_" "ERROR"
+                Error-Exit "Failed to set environment variables."
+            }}else {
+                Write-Host " Java version $version is not installed." -ForegroundColor Red
+                Log-Message " Java version $version is not installed." "ERROR"
+                Error-Exit " Java version $version is not installed."
+            }
     }
-}
+
 
 # List installed versions
 function List-Java {
     try {
         $versions = Get-ChildItem -Directory "$env:USERPROFILE\.serveJVM\versions" | ForEach-Object { $_.Name }
         if ($versions) {
-            $versions | ForEach-Object { Write-Output $_ }
-            Log-Message "Listed installed  Java versions."
+            Write-Host "📂 Installed Java Versions:" -ForegroundColor Cyan
+            $versions | ForEach-Object {
+                Write-Host "  ➡️ $($_)" -ForegroundColor Green
+            }
         } else {
-            Log-Message "No  Java versions installed."
+            Write-Host "⚠️ No Java versions installed." -ForegroundColor Yellow
         }
     } catch {
-        Error-Exit "Failed to list  Java versions."
+        Write-Host "❌ Failed to list Java versions." -ForegroundColor Red
+        Log-Message "Error listing Java versions. Error: $_" "ERROR"
+        Error-Exit "Failed to list Java versions."
     }
 }
 
@@ -254,6 +265,34 @@ function Uninstall-Java {
     }
 }
 
+# Function to check for updates
+function Check-For-Updates {
+    Write-Host "Checking for updates..." -ForegroundColor Cyan
+    try {
+        $latestVersion = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/lowinn/ServeJVM/main/version.txt" -ErrorAction Stop
+        if ($currentVersion -ne $latestVersion) {
+            Write-Host "New version available: $latestVersion" -ForegroundColor Yellow
+            Write-Host "Run 'jvm update' to update to the latest version." -ForegroundColor Yellow
+        } else {
+            Write-Host "You are using the latest version of ServeJVM." -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "Failed to check for updates." -ForegroundColor Red
+    }
+}
+
+# Function to update ServeJVM
+function Update-ServeJVM {
+    Write-Host "Updating ServeJVM..." -ForegroundColor Cyan
+    try {
+        Invoke-WebRequest -Uri $updateUrl -OutFile "$env:TEMP\install.ps1" -ErrorAction Stop
+        & "$env:TEMP\install.ps1"
+        Write-Host "ServeJVM updated successfully." -ForegroundColor Green
+    } catch {
+        Write-Host "Failed to update ServeJVM." -ForegroundColor Red
+    }
+}
+
 # Function to print help/usage information
 function Show-Usage {
     Write-Host "ServeJVM Command-Line Interface" -ForegroundColor Cyan
@@ -298,7 +337,6 @@ switch ($command) {
         }
     }
     "list" {
-        Write-Host "Listing all installed Java versions..." -ForegroundColor Cyan
         List-Java
     }
     "uninstall" {
@@ -311,7 +349,11 @@ switch ($command) {
             Show-Usage
         }
     }
+    "update" {
+       Update-ServeJVM
+    }
     default {
+        Check-For-Updates
         Show-Usage
     }
 }

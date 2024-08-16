@@ -6,7 +6,7 @@
 # DESCRIPTION
 #     This script manages multiple Java versions using ServeJVM on Unix-based
 #     systems. It allows you to install, use, list, and uninstall different
-#     versions of Amazon Corretto Java.
+#     versions of  Java.
 #
 # NOTES
 #     Author: LOWIN TECHIE
@@ -45,7 +45,7 @@ detect_os() {
 install_java() {
     version=$1
     mkdir -p "$HOME/.jvm_manager/versions/$version" || error_exit "Failed to create directory for version $version."
-    if curl -o "$HOME/.jvm_manager/tmp/openjdk-$version.tar.gz" "https://link-to-java-distribution/$version/openjdk-$version.tar.gz" 2>>"$LOG_FILE"; then
+    if curl -o "$HOME/.jvm_manager/tmp/openjdk-$version.tar.gz" "https://corretto.aws/downloads/latest/amazon-corretto-$version-x64-windows-jdk.zip" 2>>"$LOG_FILE"; then
         log_message "Downloaded Java $version."
     else
         error_exit "Failed to download Java $version."

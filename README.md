@@ -20,7 +20,7 @@ ServeJVM is a powerful and intuitive Java Version Manager. It allows developers 
 
 ### Installation Instructions
 
-#### Linux / macOS
+#### Linux / macOS ( In development )
 
 1. **Open your terminal**.
 2. **Install ServeJVM using cURL or Wget**:

@@ -86,7 +86,6 @@ try {
 # Remove the ServeJVM folder
 try {
     Remove-Item -Recurse -Force $serveJvmDir
-    Log-Message "Removed the ServeJVM folder."
 } catch {
     Log-Message "Failed to remove the ServeJVM folder. $_"
 }
