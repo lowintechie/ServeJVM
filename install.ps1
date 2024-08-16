@@ -40,6 +40,11 @@ function Error-Exit {
 # Start the installation process
 Log-Message "Starting ServeJVM installation..."
 
+# Check if Git is installed
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Error-Exit "Git is not installed or not found in PATH. Please install Git and try again."
+}
+
 # Ensure the installation directory exists
 try {
     if (-not (Test-Path -Path $installDir)) {
@@ -58,13 +63,19 @@ try {
     Error-Exit "Failed to clone the repository from $repoUrl."
 }
 
+# Ensure the bin directory exists
+$binDir = "$installDir\bin"
+if (-not (Test-Path -Path $binDir)) {
+    Error-Exit "The 'bin' directory does not exist in the cloned repository. Please check the repository structure."
+}
+
 # Update PATH in the user environment
 try {
-    if ($env:Path -notmatch [regex]::Escape("$installDir\bin")) {
-        [Environment]::SetEnvironmentVariable("Path", "$installDir\bin;$env:Path", [System.EnvironmentVariableTarget]::User)
+    if ($env:Path -notmatch [regex]::Escape("$binDir")) {
+        [Environment]::SetEnvironmentVariable("Path", "$binDir;$env:Path", [System.EnvironmentVariableTarget]::User)
         Log-Message "Updated PATH in user environment."
     } else {
-        Log-Message "PATH already contains $installDir\bin."
+        Log-Message "PATH already contains $binDir."
     }
 } catch {
     Error-Exit "Failed to update the PATH environment variable."
