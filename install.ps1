@@ -40,9 +40,14 @@ function Error-Exit {
 # Start the installation process
 Log-Message "Starting ServeJVM installation..."
 
-# Check if Git is installed
-if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    Error-Exit "Git is not installed or not found in PATH. Please install Git and try again."
+# Ensure the installation directory exists
+try {
+    if (-not (Test-Path -Path $installDir)) {
+        New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+        Log-Message "Created installation directory at $installDir."
+    }
+} catch {
+    Error-Exit "Failed to create installation directory at $installDir."
 }
 
 # Clone the repository
