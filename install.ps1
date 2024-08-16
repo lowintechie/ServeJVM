@@ -3,31 +3,35 @@
     Installation script for ServeJVM.
 
 .DESCRIPTION
-    This script clones the ServeJVM repository, updates the PATH environment variable, and sets up ServeJVM for use.
+    This script clones the ServeJVM repository, copies the jvm.ps1 file to .serveJVM/bin,
+    updates the PATH environment variable, and cleans up by removing the ServeJVM folder.
 
 .NOTES
     Author: LOWIN TECHIE
-    Version: 1.0
+    Version: 1.1
     Date: 2024-08-16
 #>
 
 # Define variables
 $repoUrl = "https://github.com/lowinn/ServeJVM.git"
 $installDir = "$env:USERPROFILE\.serveJVM"
+$serveJvmDir = "$installDir\ServeJVM"
+$binDir = "$installDir\bin"
+$scriptFile = "$binDir\jvm.ps1"
 $logFile = "$installDir\install.log"
 
-# Ensure the installation directory exists
+# Ensure the installation and bin directories exist
 try {
-    if (-not (Test-Path -Path $installDir)) {
-        New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+    if (-not (Test-Path -Path $binDir)) {
+        New-Item -ItemType Directory -Path $binDir -Force | Out-Null
         Start-Sleep -Milliseconds 500  # Wait to ensure the directory is fully created
-        if (-not (Test-Path -Path $installDir)) {
-            throw "Directory $installDir could not be created."
+        if (-not (Test-Path -Path $binDir)) {
+            throw "Directory $binDir could not be created."
         }
-        Write-Output "Created installation directory at $installDir."
+        Write-Output "Created bin directory at $binDir."
     }
 } catch {
-    Write-Output "ERROR: Failed to create installation directory at $installDir. $_"
+    Write-Output "ERROR: Failed to create bin directory at $binDir. $_"
     exit 1
 }
 
@@ -39,13 +43,6 @@ function Log-Message {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logEntry = "$timestamp - $message"
     Write-Output $logEntry
-
-    # Ensure the log file directory exists before writing
-    if (-not (Test-Path -Path $installDir)) {
-        New-Item -ItemType Directory -Path $installDir -Force | Out-Null
-        Start-Sleep -Milliseconds 500  # Ensure the directory creation process completes
-    }
-
     Add-Content -Path $logFile -Value $logEntry
 }
 
@@ -69,16 +66,31 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
 
 # Clone the repository
 try {
-    git clone $repoUrl $installDir 2>>$logFile
-    Log-Message "Repository cloned successfully to $installDir."
+    git clone $repoUrl $serveJvmDir 2>>$logFile  # Clone directly into the ServeJVM subdirectory
+    Log-Message "Repository cloned successfully to $serveJvmDir."
 } catch {
     Error-Exit "Failed to clone the repository from $repoUrl."
 }
 
-# Ensure the bin directory exists
-$binDir = "$installDir\bin"
-if (-not (Test-Path -Path $binDir)) {
-    Error-Exit "The 'bin' directory does not exist in the cloned repository. Please check the repository structure."
+# Copy jvm.ps1 to .serveJVM/bin
+try {
+    $sourceFile = "$serveJvmDir\bin\jvm.ps1"
+    if (Test-Path -Path $sourceFile) {
+        Copy-Item -Path $sourceFile -Destination $scriptFile -Force
+        Log-Message "Copied jvm.ps1 to $scriptFile."
+    } else {
+        Error-Exit "The 'jvm.ps1' file does not exist in the cloned repository."
+    }
+} catch {
+    Error-Exit "Failed to copy jvm.ps1 to $scriptFile."
+}
+
+# Remove the ServeJVM folder
+try {
+    Remove-Item -Recurse -Force $serveJvmDir
+    Log-Message "Removed the ServeJVM folder."
+} catch {
+    Log-Message "Failed to remove the ServeJVM folder. $_"
 }
 
 # Update PATH in the user environment
