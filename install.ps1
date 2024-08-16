@@ -67,7 +67,6 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
 # Clone the repository
 try {
     git clone $repoUrl $serveJvmDir 2>>$logFile  # Clone directly into the ServeJVM subdirectory
-    Log-Message "Repository cloned successfully to $serveJvmDir."
 } catch {
     Error-Exit "Failed to clone the repository from $repoUrl."
 }
@@ -77,7 +76,6 @@ try {
     $sourceFile = "$serveJvmDir\bin\jvm.ps1"
     if (Test-Path -Path $sourceFile) {
         Copy-Item -Path $sourceFile -Destination $scriptFile -Force
-        Log-Message "Copied jvm.ps1 to $scriptFile."
     } else {
         Error-Exit "The 'jvm.ps1' file does not exist in the cloned repository."
     }
