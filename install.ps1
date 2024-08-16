@@ -17,7 +17,7 @@ $repoUrl = "https://github.com/lowinn/ServeJVM.git"
 $installDir = "$env:USERPROFILE\.serveJVM"
 $serveJvmDir = "$installDir\ServeJVM"
 $binDir = "$installDir\bin"
-$versionFile = "$serveJvmDir\version.txt"
+$versionFile = "$installDir\ServeJVM\version.txt"
 $scriptFile = "$binDir\jvm.ps1"
 $logFile = "$installDir\install.log"
 
