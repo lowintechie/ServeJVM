@@ -17,6 +17,7 @@ $repoUrl = "https://github.com/lowinn/ServeJVM.git"
 $installDir = "$env:USERPROFILE\.serveJVM"
 $serveJvmDir = "$installDir\ServeJVM"
 $binDir = "$installDir\bin"
+$versionFile = "$serveJvmDir\version.txt"
 $scriptFile = "$binDir\jvm.ps1"
 $logFile = "$installDir\install.log"
 
@@ -75,6 +76,7 @@ try {
 try {
     $sourceFile = "$serveJvmDir\bin\jvm.ps1"
     if (Test-Path -Path $sourceFile) {
+        Copy-Item -Path $versionFile -Destination $installDir -Force
         Copy-Item -Path $sourceFile -Destination $scriptFile -Force
     } else {
         Error-Exit "The 'jvm.ps1' file does not exist in the cloned repository."
@@ -102,5 +104,4 @@ try {
     Error-Exit "Failed to update the PATH environment variable."
 }
 
-# Final message to the user
 Log-Message "ServeJVM installed successfully. Restart your terminal or open a new one to start using it."

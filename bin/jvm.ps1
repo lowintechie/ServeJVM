@@ -26,12 +26,12 @@ param (
 
 # Define variables
 $logFile = "$env:USERPROFILE\.serveJVM\jvm.log"
-$repoUrl = "https://github.com/lowinn/ServeJVM.git"
 $installDir = "$env:USERPROFILE\.serveJVM"
-$serveJvmDir = "$installDir\ServeJVM"
 $binDir = "$installDir\bin"
-$scriptFile = "$binDir\jvm.ps1"
 $logFile = "$installDir\install.log"
+$scriptFile = "$binDir\jvm.ps1"
+$repoUrl = "https://github.com/lowinn/ServeJVM.git"
+$serveJvmDir = "$installDir\ServeJVM"
 $versionFile = "$installDir\version.txt"
 $currentVersion = "1.1"
 $updateUrl = "https://raw.githubusercontent.com/lowinn/ServeJVM/main/install.ps1"
@@ -265,16 +265,26 @@ function Uninstall-Java {
     }
 }
 
+$scriptFile = "$binDir\jvm.ps1"
+$repoUrl = "https://github.com/lowinn/ServeJVM.git"
+$serveJvmDir = "$installDir\ServeJVM"
+$versionFile = "$installDir\version.txt"
+
 # Function to check for updates
 function Check-For-Updates {
     Write-Host "Checking for updates..." -ForegroundColor Cyan
     try {
         $latestVersion = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/lowinn/ServeJVM/main/version.txt" -ErrorAction Stop
-        if ($currentVersion -ne $latestVersion) {
-            Write-Host "New version available: $latestVersion" -ForegroundColor Yellow
-            Write-Host "Run 'jvm update' to update to the latest version." -ForegroundColor Yellow
+        if (Test-Path $versionFile) {
+            $currentVersion = Get-Content $versionFile
+            if ($currentVersion -ne $latestVersion) {
+                Write-Host "New version available: $latestVersion" -ForegroundColor Yellow
+                Write-Host "Run 'jvm update' to update to the latest version." -ForegroundColor Yellow
+            } else {
+                Write-Host "You are using the latest version of ServeJVM." -ForegroundColor Green
+            }
         } else {
-            Write-Host "You are using the latest version of ServeJVM." -ForegroundColor Green
+            Write-Host "Version file not found. Please run 'jvm update' to install ServeJVM." -ForegroundColor Yellow
         }
     } catch {
         Write-Host "Failed to check for updates." -ForegroundColor Red
@@ -285,13 +295,29 @@ function Check-For-Updates {
 function Update-ServeJVM {
     Write-Host "Updating ServeJVM..." -ForegroundColor Cyan
     try {
-        Invoke-WebRequest -Uri $updateUrl -OutFile "$env:TEMP\install.ps1" -ErrorAction Stop
-        & "$env:TEMP\install.ps1"
+        # Clone the repository or pull the latest changes
+        if (-Not (Test-Path $serveJvmDir)) {
+            Write-Host "Cloning the ServeJVM repository..." -ForegroundColor Cyan
+            git clone $repoUrl $serveJvmDir
+        } else {
+            Write-Host "Pulling the latest changes..." -ForegroundColor Cyan
+            Set-Location $serveJvmDir
+            git pull
+        }
+
+        # Run the installation script
+        if (Test-Path $scriptFile) {
+            & $scriptFile
+        } else {
+            Write-Host "Installation script not found at $scriptFile." -ForegroundColor Red
+        }
+
         Write-Host "ServeJVM updated successfully." -ForegroundColor Green
     } catch {
         Write-Host "Failed to update ServeJVM." -ForegroundColor Red
     }
 }
+
 
 # Function to print help/usage information
 function Show-Usage {
