@@ -300,10 +300,10 @@ function Show-Usage {
     Write-Host "Usage: jvm <command> [...args]" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Commands:" -ForegroundColor Cyan
-    Write-Host "  install   [version]               Install the specified Java version." -ForegroundColor Green
-    Write-Host "  use       [version]               Switch to the specified Java version." -ForegroundColor Green
-    Write-Host "  list                              List all installed Java versions." -ForegroundColor Green
-    Write-Host "  uninstall [version]               Uninstall the specified Java version." -ForegroundColor Green
+    Write-Host "  install   [command]               Install the specified Java version." -ForegroundColor Green
+    Write-Host "  use       [command]               Switch to the specified Java version." -ForegroundColor Green
+    Write-Host "  list      [command]               List all installed Java versions." -ForegroundColor Green
+    Write-Host "  uninstall [command]               Uninstall the specified Java version." -ForegroundColor Green
     Write-Host ""
     Write-Host "Example:" -ForegroundColor Cyan
     Write-Host "  jvm install 11" -ForegroundColor Yellow
