@@ -89,9 +89,7 @@ function Install-Java {
     $url = "https://corretto.aws/downloads/latest/amazon-corretto-$version-x64-windows-jdk.zip"
     try {
         Log-Message "Attempting to download from $url"
-
-        # Enhanced curl command for faster download
-        $curlCommand = "curl -L --output "$tmpFile" "$url""
+        $curlCommand = "curl -L --output `"$tmpFile`" `"$url`""
         Invoke-Expression $curlCommand
 
         Log-Message "Downloaded  Java $version using curl."
