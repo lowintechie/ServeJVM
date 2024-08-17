@@ -226,43 +226,44 @@ function Uninstall-Java {
     $installDir = "$env:USERPROFILE\.serveJVM\versions\$version"
 
     if (Test-Path $installDir) {
-        try {
-            # Remove the installation directory
-            Remove-Item -Recurse -Force $installDir -ErrorAction Stop
-            Log-Message " Java $version uninstalled successfully."
-            Write-Output " Java $version uninstalled successfully."
+    try {
+        # Remove the installation directory
+        Remove-Item -Recurse -Force $installDir -ErrorAction Stop
+        Log-Message "Java $version uninstalled successfully."
+        Write-Output "Java $version uninstalled successfully."
 
-            # Clear JAVA_HOME if it is pointing to the uninstalled version
-            $currentJavaHome = [System.Environment]::GetEnvironmentVariable("JAVA_HOME", [System.EnvironmentVariableTarget]::User)
-            if ($currentJavaHome -eq $installDir) {
-                [System.Environment]::SetEnvironmentVariable("JAVA_HOME", $null, [System.EnvironmentVariableTarget]::User)
-                Log-Message "Cleared JAVA_HOME environment variable."
-                Write-Output "Cleared JAVA_HOME environment variable."
-            }
-
-            # Remove the Java bin directory from the PATH variable
-            $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::User)
-            $newPath = ($currentPath -split ';') -notmatch [regex]::Escape("$installDir\bin") -join ';'
-            [System.Environment]::SetEnvironmentVariable("Path", $newPath, [System.EnvironmentVariableTarget]::User)
-            Log-Message "Removed $installDir\bin from PATH environment variable."
-            Write-Output "Removed $installDir\bin from PATH environment variable."
-
-            # Clear the current session's environment variables if they were set to the uninstalled version
-            if ($env:JAVA_HOME -eq $installDir) {
-                $env:JAVA_HOME = $null
-                $env:Path = $env:Path -replace [regex]::Escape("$installDir\bin;"), ""
-                Log-Message "Cleared JAVA_HOME and updated PATH for the current session."
-                Write-Output "Cleared JAVA_HOME and updated PATH for the current session."
-            } else {
-                Log-Message "No action needed for session variables."
-            }
-        } catch {
-            Log-Message "Failed to uninstall  Java $version. Error: $_" "ERROR"
-            Error-Exit "Failed to uninstall  Java $version. Please ensure the directory is not in use."
+        # Clear JAVA_HOME if it is pointing to the uninstalled version
+        $currentJavaHome = [System.Environment]::GetEnvironmentVariable("JAVA_HOME", [System.EnvironmentVariableTarget]::User)
+        if ($currentJavaHome -eq $installDir) {
+            [System.Environment]::SetEnvironmentVariable("JAVA_HOME", $null, [System.EnvironmentVariableTarget]::User)
+            Log-Message "Cleared JAVA_HOME environment variable."
+            Write-Output "Cleared JAVA_HOME environment variable."
         }
-    } else {
-        Error-Exit " Java version $version is not installed."
+
+        # Remove the Java bin directory from the PATH variable
+        $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::User)
+        $newPath = ($currentPath -split ';') -notmatch [regex]::Escape("$installDir\bin") -join ';'
+        [System.Environment]::SetEnvironmentVariable("Path", $newPath, [System.EnvironmentVariableTarget]::User)
+        Log-Message "Removed $installDir\bin from PATH environment variable."
+        Write-Output "Removed $installDir\bin from PATH environment variable."
+
+        # Clear the current session's environment variables if they were set to the uninstalled version
+        if ($env:JAVA_HOME -eq $installDir) {
+            $env:JAVA_HOME = $null
+            $env:Path = $env:Path -replace [regex]::Escape("$installDir\bin;"), ""
+            Log-Message "Cleared JAVA_HOME and updated PATH for the current session."
+            Write-Output "Cleared JAVA_HOME and updated PATH for the current session."
+        } else {
+            Log-Message "No action needed for session variables."
+        }
+    } catch {
+        Log-Message "Failed to uninstall Java $version. Error: $_" "ERROR"
+        Error-Exit "Failed to uninstall Java $version. Please ensure the directory is not in use."
     }
+} else {
+    Error-Exit "Java version $version is not installed."
+}
+
 }
 
 $scriptFile = "$binDir\jvm.ps1"
