@@ -12,7 +12,6 @@
     Date: 2024-08-16
 #>
 
-# Define variables
 $repoUrl = "https://github.com/lowinn/ServeJVM.git"
 $installDir = "$env:USERPROFILE\.serveJVM"
 $serveJvmDir = "$installDir\ServeJVM"
@@ -20,6 +19,12 @@ $binDir = "$installDir\bin"
 $versionFile = "$installDir\ServeJVM\version.txt"
 $scriptFile = "$binDir\jvm.ps1"
 $logFile = "$installDir\install.log"
+
+
+$originalExecutionPolicy = Get-ExecutionPolicy
+if ($originalExecutionPolicy -ne 'RemoteSigned') {
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned -Force
+}
 
 # Ensure the installation and bin directories exist
 try {
@@ -54,6 +59,8 @@ function Error-Exit {
     )
     Log-Message "ERROR: $message"
     Log-Message "Installation failed. Please check the log file at $logFile for more details."
+    # Restore the original execution policy
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy $originalExecutionPolicy -Force
     exit 1
 }
 
@@ -105,3 +112,6 @@ try {
 }
 
 Log-Message "ServeJVM installed successfully. Restart your terminal or open a new one to start using it."
+
+# Restore the original execution policy
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy $originalExecutionPolicy -Force
