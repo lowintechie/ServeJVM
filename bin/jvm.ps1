@@ -171,7 +171,7 @@ function Use-Java {
             # Step 3: Clean up old PATH entries
             Update-Progress -activity "Cleaning old PATH entries" -percentComplete ($currentStep / $steps * 100)
             Log-Message "Cleaning old PATH entries."
-            $newPath = ($currentPath -split `;`) -notmatch [regex]::Escape(`\.serveJVM\versions\\`) -join `;`
+            $newPath = ($currentPath -split ';') -notmatch [regex]::Escape('\.serveJVM\versions\\') -join ';'
 
             # Step 4: Update PATH with new Java version
             Update-Progress -activity "Updating PATH" -percentComplete ($currentStep / $steps * 100)
@@ -188,7 +188,7 @@ function Use-Java {
             Write-Progress -Activity "Setup Complete" -Status "100% Complete" -PercentComplete 100
             Write-Host "Switched to Java $version successfully." -ForegroundColor Green
             Log-Message "Switched to Java $version."
-            Write-Output "Switched to Java $version. Please restart your terminal session or run `refreshenv` if using a tool like Chocolatey."
+            Write-Output "Switched to Java $version. Please restart your terminal session or run 'refreshenv' if using a tool like Chocolatey."
         } catch {
             Write-Host "Failed to set environment variables for Java $version." -ForegroundColor Red
             Log-Message "Failed to set variables for Java $version. Error: $_" "ERROR"
@@ -245,7 +245,7 @@ function Uninstall-Java {
 
             # Remove the Java bin directory from the PATH variable
             $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::User)
-            $newPath = ($currentPath -split `;`) -notmatch [regex]::Escape("$installDir\bin") -join `;`
+            $newPath = ($currentPath -split ';') -notmatch [regex]::Escape("$installDir\bin") -join ';'
             [System.Environment]::SetEnvironmentVariable("Path", $newPath, [System.EnvironmentVariableTarget]::User)
             Log-Message "Removed $installDir\bin from PATH environment variable."
             Write-Output "Removed $installDir\bin from PATH environment variable."
