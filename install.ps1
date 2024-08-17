@@ -20,11 +20,17 @@ $versionFile = "$installDir\ServeJVM\version.txt"
 $scriptFile = "$binDir\jvm.ps1"
 $logFile = "$installDir\install.log"
 
-# Set execution policy to Bypass 
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-$originalExecutionPolicy = Get-ExecutionPolicy
-if ($originalExecutionPolicy -ne 'RemoteSigned') {
-    Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned -Force
+# Check if script execution is allowed
+$executionPolicy = Get-ExecutionPolicy
+
+if ($executionPolicy -eq "Restricted" -or $executionPolicy -eq "AllSigned") {
+    try {
+        # Attempt to set the execution policy to Bypass temporarily
+        Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+    } catch {
+        Write-Error "Failed to set execution policy to Bypass. Please run this script with elevated permissions or change the execution policy manually."
+        exit 1
+    }
 }
 
 # Ensure the installation and bin directories exist
@@ -60,8 +66,6 @@ function Error-Exit {
     )
     Log-Message "ERROR: $message"
     Log-Message "Installation failed. Please check the log file at $logFile for more details."
-    # Restore the original execution policy
-    Set-ExecutionPolicy -Scope Process -ExecutionPolicy $originalExecutionPolicy -Force
     exit 1
 }
 
@@ -115,4 +119,6 @@ try {
 Log-Message "ServeJVM installed successfully. Restart your terminal or open a new one to start using it."
 
 # Restore the original execution policy
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy $originalExecutionPolicy -Force
+if ($executionPolicy -ne "Restricted" -and $executionPolicy -ne "AllSigned") {
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy $executionPolicy -Force
+}
