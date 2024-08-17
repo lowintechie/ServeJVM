@@ -74,12 +74,26 @@ function Error-Exit {
 # Start the installation process
 Log-Message "Starting ServeJVM installation..."
 
-# Download the repository zip file using curl
-try {
-    $curlCommand = "curl -L -o `"$zipFile`" `"$repoUrl`""
-    Invoke-Expression $curlCommand
-} catch {
-    Error-Exit "Failed to download the repository from $repoUrl."
+# Determine which command to use for downloading the zip file
+if (Get-Command curl -ErrorAction SilentlyContinue) {
+    $downloadCommand = "curl -L -o `"$zipFile`" `"$repoUrl`""
+} elseif (Get-Command wget -ErrorAction SilentlyContinue) {
+    $downloadCommand = "wget -O `"$zipFile`" `"$repoUrl`""
+} else {
+    $downloadCommand = {
+        try {
+            Invoke-WebRequest -Uri $repoUrl -OutFile $zipFile
+        } catch {
+            Error-Exit "Failed to download the repository from $repoUrl."
+        }
+    }
+}
+
+# Execute the download command
+if ($downloadCommand -is [string]) {
+    Invoke-Expression $downloadCommand
+} else {
+    & $downloadCommand
 }
 
 # Extract the downloaded zip file
@@ -128,5 +142,6 @@ Log-Message "ServeJVM installed successfully. Restart your terminal or open a ne
 if ($executionPolicy -ne "Restricted" -and $executionPolicy -ne "AllSigned") {
     Set-ExecutionPolicy -Scope Process -ExecutionPolicy $executionPolicy -Force
 }
+
 
 
