@@ -74,6 +74,14 @@ function Error-Exit {
 # Start the installation process
 Log-Message "Starting ServeJVM installation..."
 
+# Remove curl and wget aliases if they exist (specific to Windows PowerShell)
+if (Get-Alias curl -ErrorAction SilentlyContinue) {
+    Remove-Item Alias:curl
+}
+if (Get-Alias wget -ErrorAction SilentlyContinue) {
+    Remove-Item Alias:wget
+}
+
 # Determine which command to use for downloading the zip file
 if (Get-Command curl -ErrorAction SilentlyContinue) {
     $downloadCommand = {
@@ -150,6 +158,7 @@ Log-Message "ServeJVM installed successfully. Restart your terminal or open a ne
 if ($executionPolicy -ne "Restricted" -and $executionPolicy -ne "AllSigned") {
     Set-ExecutionPolicy -Scope Process -ExecutionPolicy $executionPolicy -Force
 }
+
 
 
 
