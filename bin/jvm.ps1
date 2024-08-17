@@ -253,6 +253,8 @@ function Uninstall-Java {
                 $env:Path = $env:Path -replace [regex]::Escape("$installDir\bin;"), ""
                 Log-Message "Cleared JAVA_HOME and updated PATH for the current session."
                 Write-Output "Cleared JAVA_HOME and updated PATH for the current session."
+            } else {
+                Log-Message "No action needed for session variables."
             }
         } catch {
             Log-Message "Failed to uninstall  Java $version. Error: $_" "ERROR"
