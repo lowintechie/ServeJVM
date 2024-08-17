@@ -284,12 +284,13 @@ function Check-For-Updates {
                 Write-Host "You are using the latest version of ServeJVM." -ForegroundColor Green
             }
         } else {
-            Write-Host "Version file not found. Please run 'jvm update' to install ServeJVM." -ForegroundColor Yellow
+            Write-Host "Version file not found. Please run `jvm update` to install ServeJVM." -ForegroundColor Yellow
         }
     } catch {
         Write-Host "Failed to check for updates." -ForegroundColor Red
     }
 }
+
 
 # Function to update ServeJVM
 function Update-ServeJVM {
