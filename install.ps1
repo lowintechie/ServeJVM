@@ -76,25 +76,28 @@ Log-Message "Starting ServeJVM installation..."
 
 # Determine which command to use for downloading the zip file
 if (Get-Command curl -ErrorAction SilentlyContinue) {
+    $useCurl = $true
     $downloadCommand = "curl -L -o `"$zipFile`" `"$repoUrl`""
 } elseif (Get-Command wget -ErrorAction SilentlyContinue) {
+    $useCurl = $false
     $downloadCommand = "wget -O `"$zipFile`" `"$repoUrl`""
 } else {
-    $downloadCommand = {
-        try {
-            Invoke-WebRequest -Uri $repoUrl -OutFile $zipFile
-        } catch {
-            Error-Exit "Failed to download the repository from $repoUrl."
-        }
-    }
+    $useCurl = $null
 }
 
 # Execute the download command
-if ($downloadCommand -is [string]) {
-    Invoke-Expression $downloadCommand
-} else {
-    & $downloadCommand
+try {
+    if ($useCurl -eq $true) {
+        Start-Process -NoNewWindow -Wait -FilePath "curl" -ArgumentList "-L", "-o", "`"$zipFile`"", "`"$repoUrl`""
+    } elseif ($useCurl -eq $false) {
+        Start-Process -NoNewWindow -Wait -FilePath "wget" -ArgumentList "-O", "`"$zipFile`"", "`"$repoUrl`""
+    } else {
+        Invoke-WebRequest -Uri $repoUrl -OutFile $zipFile
+    }
+} catch {
+    Error-Exit "Failed to download the repository from $repoUrl."
 }
+
 
 # Extract the downloaded zip file
 $extractedDir = "$env:TEMP\ServeJVM-main"
