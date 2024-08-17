@@ -96,7 +96,13 @@ try {
 $extractedDir = "$installDir\ServeJVM-main"
 try {
     if (Test-Path -Path $extractedDir) {
-        Move-Item -Path "$extractedDir\*" -Destination $installDir -Force
+        # Move contents from the extracted directory, avoiding overwriting existing directories
+        Get-ChildItem -Path "$extractedDir\*" -Recurse | ForEach-Object {
+            $destinationPath = Join-Path -Path $installDir -ChildPath $_.FullName.Substring($extractedDir.Length + 1)
+            if (-not (Test-Path -Path $destinationPath)) {
+                Move-Item -Path $_.FullName -Destination $destinationPath -Force
+            }
+        }
         Remove-Item -Recurse -Force $extractedDir
     } else {
         Error-Exit "The extracted directory does not exist."
@@ -107,7 +113,9 @@ try {
 
 # Clean up by removing the ServeJVM folder
 try {
-    Remove-Item -Recurse -Force $serveJvmDir
+    if (Test-Path -Path $serveJvmDir) {
+        Remove-Item -Recurse -Force $serveJvmDir
+    }
 } catch {
     Write-Output "Failed to remove the ServeJVM folder. $_"
 }
