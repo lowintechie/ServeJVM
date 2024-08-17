@@ -20,7 +20,8 @@ $versionFile = "$installDir\ServeJVM\version.txt"
 $scriptFile = "$binDir\jvm.ps1"
 $logFile = "$installDir\install.log"
 
-
+# Set execution policy to Bypass 
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 $originalExecutionPolicy = Get-ExecutionPolicy
 if ($originalExecutionPolicy -ne 'RemoteSigned') {
     Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned -Force
