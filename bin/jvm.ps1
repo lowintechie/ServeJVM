@@ -220,6 +220,7 @@ function List-Java {
     }
 }
 
+
 # Uninstall a specific Java version
 function Uninstall-Java {
     param (
@@ -275,12 +276,12 @@ function Check-For-Updates {
             $currentVersion = Get-Content $versionFile
             if ($currentVersion -ne $latestVersion) {
                 Write-Host "New version available: $latestVersion" -ForegroundColor Yellow
-                Write-Host "Run 'jvm update' to update to the latest version." -ForegroundColor Yellow
+                Write-Host "Run `jvm update` to update to the latest version." -ForegroundColor Yellow
             } else {
                 Write-Host "You are using the latest version of ServeJVM." -ForegroundColor Green
             }
         } else {
-            Write-Host "Version file not found. Please run 'jvm update' to install ServeJVM." -ForegroundColor Yellow
+            Write-Host "Version file not found. Please run `jvm update` to install ServeJVM." -ForegroundColor Yellow
         }
     } catch {
         Write-Host "Failed to check for updates." -ForegroundColor Red
