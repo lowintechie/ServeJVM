@@ -28,13 +28,13 @@ param (
 $logFile = "$env:USERPROFILE\.serveJVM\jvm.log"
 $installDir = "$env:USERPROFILE\.serveJVM"
 $binDir = "$installDir\bin"
-$logFile = "$installDir\install.log"
 $scriptFile = "$binDir\jvm.ps1"
 $repoUrl = "https://github.com/lowinn/ServeJVM.git"
 $serveJvmDir = "$installDir\ServeJVM"
 $versionFile = "$installDir\version.txt"
 $currentVersion = "1.1"
 $updateUrl = "https://raw.githubusercontent.com/lowinn/ServeJVM/main/install.ps1"
+
 # Function to log messages
 function Log-Message {
     param (
@@ -89,18 +89,20 @@ function Install-Java {
     $url = "https://corretto.aws/downloads/latest/amazon-corretto-$version-x64-windows-jdk.zip"
     try {
         Log-Message "Attempting to download from $url"
-        $curlCommand = "curl -L --output `"$tmpFile`" `"$url`""
-        Invoke-Expression $curlCommand
-
-        Log-Message "Downloaded  Java $version using curl."
+        if (Get-Command -Name "curl" -ErrorAction SilentlyContinue) {
+            & curl -L -o $tmpFile $url
+        } else {
+            Invoke-WebRequest -Uri $url -OutFile $tmpFile -ErrorAction Stop
+        }
+        Log-Message "Downloaded Java $version."
     } catch {
-        Log-Message "Failed to download  Java $version from $url. Error details: $_" "ERROR"
+        Log-Message "Failed to download Java $version from $url. Error details: $_" "ERROR"
         Error-Exit "Check if the Java version $version exists and the URL is correct."
     }
 
     try {
         Expand-Archive -Path $tmpFile -DestinationPath $extractDir -ErrorAction Stop
-        Log-Message "Extracted  Java $version to $extractDir."
+        Log-Message "Extracted Java $version to $extractDir."
 
         # Handle nested directory structure
         $extractedContent = Get-ChildItem -Path $extractDir | Select-Object -First 1
@@ -116,7 +118,7 @@ function Install-Java {
             Error-Exit "Extraction failed: no content found in the archive."
         }
     } catch {
-        Log-Message "Failed to extract or move  Java $version." "ERROR"
+        Log-Message "Failed to extract or move Java $version." "ERROR"
         Error-Exit "Extraction or move operation failed. Ensure that the downloaded file is a valid ZIP archive."
     }
 
@@ -128,10 +130,10 @@ function Install-Java {
         Log-Message "Failed to remove temporary files." "WARNING"
     }
 
-    Log-Message " Java $version installed successfully."
+    Log-Message "Java $version installed successfully."
 }
 
-# Function to stwitch to a specific Java version
+# Function to switch to a specific Java version
 function Use-Java {
     param (
         [string]$version
@@ -142,8 +144,8 @@ function Use-Java {
     if (Test-Path $installDir) {
         try {
             # Start of the process
-            Log-Message "Setting up  Java $version..."
-            Write-Host "Setting up  Java $version..." -ForegroundColor Cyan
+            Log-Message "Setting up Java $version..."
+            Write-Host "Setting up Java $version..." -ForegroundColor Cyan
 
             $steps = 5
             $currentStep = 0
@@ -187,17 +189,17 @@ function Use-Java {
             Write-Host "Switched to Java $version successfully." -ForegroundColor Green
             Log-Message "Switched to Java $version."
             Write-Output "Switched to Java $version. Please restart your terminal session or run 'refreshenv' if using a tool like Chocolatey."
-            } catch {
-                Write-Host "Failed to set environment variables for Java $version." -ForegroundColor Red
-                Log-Message "Failed to set variables for Java $version. Error: $_" "ERROR"
-                Error-Exit "Failed to set environment variables."
-            }}else {
-                Write-Host " Java version $version is not installed." -ForegroundColor Red
-                Log-Message " Java version $version is not installed." "ERROR"
-                Error-Exit " Java version $version is not installed."
-            }
+        } catch {
+            Write-Host "Failed to set environment variables for Java $version." -ForegroundColor Red
+            Log-Message "Failed to set variables for Java $version. Error: $_" "ERROR"
+            Error-Exit "Failed to set environment variables."
+        }
+    } else {
+        Write-Host "Java version $version is not installed." -ForegroundColor Red
+        Log-Message "Java version $version is not installed." "ERROR"
+        Error-Exit "Java version $version is not installed."
     }
-
+}
 
 # List installed versions
 function List-Java {
@@ -264,12 +266,6 @@ function Uninstall-Java {
     }
 }
 
-
-$scriptFile = "$binDir\jvm.ps1"
-$repoUrl = "https://github.com/lowinn/ServeJVM.git"
-$serveJvmDir = "$installDir\ServeJVM"
-$versionFile = "$installDir\version.txt"
-
 # Function to check for updates
 function Check-For-Updates {
     Write-Host "Checking for updates..." -ForegroundColor Cyan
@@ -284,13 +280,12 @@ function Check-For-Updates {
                 Write-Host "You are using the latest version of ServeJVM." -ForegroundColor Green
             }
         } else {
-            Write-Host "Version file not found. Please run `jvm update` to install ServeJVM." -ForegroundColor Yellow
+            Write-Host "Version file not found. Please run 'jvm update' to install ServeJVM." -ForegroundColor Yellow
         }
     } catch {
         Write-Host "Failed to check for updates." -ForegroundColor Red
     }
 }
-
 
 # Function to update ServeJVM
 function Update-ServeJVM {
@@ -316,7 +311,6 @@ function Update-ServeJVM {
         Write-Host "Failed to update ServeJVM." -ForegroundColor Red
     }
 }
-
 
 # Function to print help/usage information
 function Show-Usage {
@@ -375,7 +369,7 @@ switch ($command) {
         }
     }
     "update" {
-       Update-ServeJVM
+        Update-ServeJVM
     }
     default {
         Check-For-Updates
