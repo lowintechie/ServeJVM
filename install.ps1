@@ -13,12 +13,11 @@
 #>
 $repoUrl = "https://github.com/lowinn/ServeJVM/archive/refs/heads/main.zip"
 $installDir = "$env:USERPROFILE\.serveJVM"
-$serveJvmDir = "$installDir\ServeJVM"
 $binDir = "$installDir\bin"
-$logFile = "$installDir\install.log"
-$zipFile = "$env:TEMP\ServeJVM.zip"
 $tmpDir = "$installDir\tmp"
 $versionsDir = "$installDir\versions"
+$logFile = "$installDir\install.log"
+$zipFile = "$env:TEMP\ServeJVM.zip"
 
 # Check if script execution is allowed
 $executionPolicy = Get-ExecutionPolicy
@@ -84,40 +83,31 @@ try {
 }
 
 # Extract the downloaded zip file
+$extractedDir = "$env:TEMP\ServeJVM-main"
 try {
     Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFile, $installDir)
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFile, $env:TEMP)
     Remove-Item -Force $zipFile  # Clean up the zip file
 } catch {
     Error-Exit "Failed to extract the repository from $zipFile."
 }
 
-# Move the extracted files to the proper location
-$extractedDir = "$installDir\ServeJVM-main"
+# Copy only the required files and directories to the install directory
 try {
-    if (Test-Path -Path $extractedDir) {
-        # Move contents from the extracted directory, avoiding overwriting existing directories
-        Get-ChildItem -Path "$extractedDir\*" -Recurse | ForEach-Object {
-            $destinationPath = Join-Path -Path $installDir -ChildPath $_.FullName.Substring($extractedDir.Length + 1)
-            if (-not (Test-Path -Path $destinationPath)) {
-                Move-Item -Path $_.FullName -Destination $destinationPath -Force
-            }
-        }
-        Remove-Item -Recurse -Force $extractedDir
-    } else {
-        Error-Exit "The extracted directory does not exist."
-    }
+    # Copy jvm.ps1 from the bin folder
+    Copy-Item -Path "$extractedDir\bin\jvm.ps1" -Destination $binDir -Force
+
+    # Copy the version.txt file
+    Copy-Item -Path "$extractedDir\version.txt" -Destination $installDir -Force
 } catch {
-    Error-Exit "Failed to move the extracted files to $installDir."
+    Error-Exit "Failed to copy necessary files from the extracted repository."
 }
 
-# Clean up by removing the ServeJVM folder
+# Clean up the extracted directory
 try {
-    if (Test-Path -Path $serveJvmDir) {
-        Remove-Item -Recurse -Force $serveJvmDir
-    }
+    Remove-Item -Recurse -Force $extractedDir
 } catch {
-    Write-Output "Failed to remove the ServeJVM folder. $_"
+    Write-Output "Failed to clean up the extracted directory. $_"
 }
 
 # Update PATH in the user environment
@@ -138,4 +128,5 @@ Log-Message "ServeJVM installed successfully. Restart your terminal or open a ne
 if ($executionPolicy -ne "Restricted" -and $executionPolicy -ne "AllSigned") {
     Set-ExecutionPolicy -Scope Process -ExecutionPolicy $executionPolicy -Force
 }
+
 
