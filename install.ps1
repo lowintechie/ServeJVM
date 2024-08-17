@@ -11,14 +11,12 @@
     Version: 1.1
     Date: 2024-08-16
 #>
-
-$repoUrl = "https://github.com/lowinn/ServeJVM.git"
+$repoUrl = "https://github.com/lowinn/ServeJVM/archive/refs/heads/main.zip"
 $installDir = "$env:USERPROFILE\.serveJVM"
 $serveJvmDir = "$installDir\ServeJVM"
 $binDir = "$installDir\bin"
-$versionFile = "$installDir\ServeJVM\version.txt"
-$scriptFile = "$binDir\jvm.ps1"
 $logFile = "$installDir\install.log"
+$zipFile = "$env:TEMP\ServeJVM.zip"
 
 # Check if script execution is allowed
 $executionPolicy = Get-ExecutionPolicy
@@ -72,36 +70,41 @@ function Error-Exit {
 # Start the installation process
 Log-Message "Starting ServeJVM installation..."
 
-# Check if Git is installed
-if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    Error-Exit "Git is not installed or not found in PATH. Please install Git and try again."
-}
-
-# Clone the repository
+# Download the repository zip file using curl
 try {
-    git clone $repoUrl $serveJvmDir 2>>$logFile  # Clone directly into the ServeJVM subdirectory
+    $curlCommand = "curl -L -o `"$zipFile`" `"$repoUrl`""
+    Invoke-Expression $curlCommand
 } catch {
-    Error-Exit "Failed to clone the repository from $repoUrl."
+    Error-Exit "Failed to download the repository from $repoUrl."
 }
 
-# Copy jvm.ps1 to .serveJVM/bin
+# Extract the downloaded zip file
 try {
-    $sourceFile = "$serveJvmDir\bin\jvm.ps1"
-    if (Test-Path -Path $sourceFile) {
-        Copy-Item -Path $versionFile -Destination $installDir -Force
-        Copy-Item -Path $sourceFile -Destination $scriptFile -Force
+    Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFile, $installDir)
+    Remove-Item -Force $zipFile  # Clean up the zip file
+} catch {
+    Error-Exit "Failed to extract the repository from $zipFile."
+}
+
+# Move the extracted files to the proper location
+$extractedDir = "$installDir\ServeJVM-main"
+try {
+    if (Test-Path -Path $extractedDir) {
+        Move-Item -Path "$extractedDir\*" -Destination $installDir -Force
+        Remove-Item -Recurse -Force $extractedDir
     } else {
-        Error-Exit "The 'jvm.ps1' file does not exist in the cloned repository."
+        Error-Exit "The extracted directory does not exist."
     }
 } catch {
-    Error-Exit "Failed to copy jvm.ps1 to $scriptFile."
+    Error-Exit "Failed to move the extracted files to $installDir."
 }
 
-# Remove the ServeJVM folder
+# Clean up by removing the ServeJVM folder
 try {
     Remove-Item -Recurse -Force $serveJvmDir
 } catch {
-    Log-Message "Failed to remove the ServeJVM folder. $_"
+    Write-Output "Failed to remove the ServeJVM folder. $_"
 }
 
 # Update PATH in the user environment
