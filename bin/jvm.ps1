@@ -247,7 +247,6 @@ function Uninstall-Java {
         Log-Message "Removed $installDir\bin from PATH environment variable."
         Write-Output "Removed $installDir\bin from PATH environment variable."
 
-        # Clear the current session's environment variables if they were set to the uninstalled version
         if ($env:JAVA_HOME -eq $installDir) {
             $env:JAVA_HOME = $null
             $env:Path = $env:Path -replace [regex]::Escape("$installDir\bin;"), ""
@@ -263,6 +262,7 @@ function Uninstall-Java {
 } else {
     Error-Exit "Java version $version is not installed."
 }
+
 
 }
 
