@@ -74,35 +74,10 @@ function Error-Exit {
 # Start the installation process
 Log-Message "Starting ServeJVM installation..."
 
-# Remove curl and wget aliases if they exist (specific to Windows PowerShell)
-if (Get-Alias curl -ErrorAction SilentlyContinue) {
-    Remove-Item Alias:curl
-}
-if (Get-Alias wget -ErrorAction SilentlyContinue) {
-    Remove-Item Alias:wget
-}
-
-# Determine which command to use for downloading the zip file
-if (Get-Command curl -ErrorAction SilentlyContinue) {
-    $downloadCommand = {
-        Log-Message "Attempting to download using curl..."
-        & curl -L -o $zipFile $repoUrl
-    }
-} elseif (Get-Command wget -ErrorAction SilentlyContinue) {
-    $downloadCommand = {
-        Log-Message "Attempting to download using wget..."
-        & wget -O $zipFile $repoUrl
-    }
-} else {
-    $downloadCommand = {
-        Log-Message "Attempting to download using Invoke-WebRequest..."
-        Invoke-WebRequest -Uri $repoUrl -OutFile $zipFile
-    }
-}
-
-# Execute the download command
+# Download the repository zip file using Invoke-WebRequest
 try {
-    & $downloadCommand
+    Log-Message "Attempting to download using Invoke-WebRequest..."
+    Invoke-WebRequest -Uri $repoUrl -OutFile $zipFile
 } catch {
     Error-Exit "Failed to download the repository from $repoUrl."
 }
