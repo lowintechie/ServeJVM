@@ -47,15 +47,21 @@ ServeJVM is a powerful and intuitive Java Version Manager. It allows developers 
     jvm list
     ```
 
-#### Windows
+### Windows
 
-1. **Open PowerShell as Administrator**.
-2. **Install ServeJVM using PowerShell**:
+1. **Open PowerShell Core (`pwsh`) as Administrator**:
+    - Press `Windows + X` and choose **Windows Terminal (Admin)** if it defaults to PowerShell Core.
+    - Alternatively, search for "pwsh" or "PowerShell 7" in the Start menu, right-click it, and select **Run as administrator**.
+    - If you don't have PowerShell Core installed, you can download it from the official site: [Download PowerShell Core](https://github.com/PowerShell/PowerShell).
+
+2. **Install ServeJVM using PowerShell Core**:
 
     ```powershell
     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lowinn/ServeJVM/main/install.ps1" -OutFile "$env:TEMP\install.ps1"; & "$env:TEMP\install.ps1"
     ```
 
+**Note**: It is highly recommended to use PowerShell Core (`pwsh`) instead of the original Windows PowerShell (`powershell.exe`) to avoid potential syntax and parsing issues that might occur with certain scripts.
+"""
 3. **Restart your terminal**:
 
     After running the script, restart your terminal or log out and back in to apply the changes.
