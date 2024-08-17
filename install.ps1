@@ -17,6 +17,8 @@ $serveJvmDir = "$installDir\ServeJVM"
 $binDir = "$installDir\bin"
 $logFile = "$installDir\install.log"
 $zipFile = "$env:TEMP\ServeJVM.zip"
+$tmpDir = "$installDir\tmp"
+$versionsDir = "$installDir\versions"
 
 # Check if script execution is allowed
 $executionPolicy = Get-ExecutionPolicy
@@ -31,18 +33,21 @@ if ($executionPolicy -eq "Restricted" -or $executionPolicy -eq "AllSigned") {
     }
 }
 
-# Ensure the installation and bin directories exist
+# Ensure the necessary directories exist
 try {
-    if (-not (Test-Path -Path $binDir)) {
-        New-Item -ItemType Directory -Path $binDir -Force | Out-Null
-        Start-Sleep -Milliseconds 500  # Wait to ensure the directory is fully created
-        if (-not (Test-Path -Path $binDir)) {
-            throw "Directory $binDir could not be created."
+    $directories = @($binDir, $tmpDir, $versionsDir)
+    foreach ($dir in $directories) {
+        if (-not (Test-Path -Path $dir)) {
+            New-Item -ItemType Directory -Path $dir -Force | Out-Null
+            Start-Sleep -Milliseconds 500  # Wait to ensure the directory is fully created
+            if (-not (Test-Path -Path $dir)) {
+                throw "Directory $dir could not be created."
+            }
+            Write-Output "Created directory at $dir."
         }
-        Write-Output "Created bin directory at $binDir."
     }
 } catch {
-    Write-Output "ERROR: Failed to create bin directory at $binDir. $_"
+    Write-Output "ERROR: Failed to create necessary directories. $_"
     exit 1
 }
 
@@ -125,3 +130,4 @@ Log-Message "ServeJVM installed successfully. Restart your terminal or open a ne
 if ($executionPolicy -ne "Restricted" -and $executionPolicy -ne "AllSigned") {
     Set-ExecutionPolicy -Scope Process -ExecutionPolicy $executionPolicy -Force
 }
+
