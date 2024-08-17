@@ -218,7 +218,7 @@ function List-Java {
         Log-Message "Error listing Java versions. Error: $_" "ERROR"
         Error-Exit "Failed to list Java versions."
     }
-}
+} 
 
 
 # Uninstall a specific Java version
