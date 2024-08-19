@@ -89,11 +89,7 @@ function Install-Java {
     $url = "https://corretto.aws/downloads/latest/amazon-corretto-$version-x64-windows-jdk.zip"
     try {
         Log-Message "Attempting to download from $url"
-        if (Get-Command -Name "curl" -ErrorAction SilentlyContinue) {
-            & curl -L -o $tmpFile $url
-        } else {
-            Invoke-WebRequest -Uri $url -OutFile $tmpFile -ErrorAction Stop
-        }
+        Invoke-WebRequest -Uri $url -OutFile $tmpFile -ErrorAction Stop
         Log-Message "Downloaded Java $version."
     } catch {
         Log-Message "Failed to download Java $version from $url. Error details: $_" "ERROR"
@@ -132,6 +128,7 @@ function Install-Java {
 
     Log-Message "Java $version installed successfully."
 }
+
 
 # Function to switch to a specific Java version
 function Use-Java {
