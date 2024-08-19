@@ -18,6 +18,7 @@ $tmpDir = "$installDir\tmp"
 $versionsDir = "$installDir\versions"
 $logFile = "$installDir\install.log"
 $zipFile = "$env:TEMP\ServeJVM.zip"
+$extractedDir = "C:\Temp\ServeJVM-main"
 
 # Check if script execution is allowed
 $executionPolicy = Get-ExecutionPolicy
@@ -88,8 +89,10 @@ if (-not (Test-Path -Path $zipFile)) {
 }
 
 # Extract the downloaded zip file
-$extractedDir = "C:\Temp\ServeJVM-main"
 try {
+    if (Test-Path $extractedDir) {
+        Remove-Item -Recurse -Force $extractedDir
+    }
     Expand-Archive -Path $zipFile -DestinationPath "C:\Temp" -Force
     Remove-Item -Force $zipFile  # Clean up the zip file
 } catch {
@@ -112,7 +115,7 @@ try {
 try {
     Remove-Item -Recurse -Force $extractedDir
 } catch {
-    Write-Output "Failed to clean up the extracted directory. $_"
+    Log-Message "Failed to clean up the extracted directory. $_"
 }
 
 # Update PATH in the user environment
@@ -133,6 +136,7 @@ Log-Message "ServeJVM installed successfully. Restart your terminal or open a ne
 if ($executionPolicy -ne "Restricted" -and $executionPolicy -ne "AllSigned") {
     Set-ExecutionPolicy -Scope Process -ExecutionPolicy $executionPolicy -Force
 }
+
 
 
 
