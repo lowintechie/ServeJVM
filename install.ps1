@@ -17,7 +17,7 @@ $binDir = "$installDir\bin"
 $tmpDir = "$installDir\tmp"
 $versionsDir = "$installDir\versions"
 $logFile = "$installDir\install.log"
-$extractedDir = "$env:TEMP\ServeJVM-main"
+$extractedDir = "C:\ServeJVM-main"  # Changed to a simpler path
 
 # Check if script execution is allowed
 $executionPolicy = Get-ExecutionPolicy
@@ -126,6 +126,7 @@ Log-Message "ServeJVM installed successfully. Restart your terminal or open a ne
 if ($executionPolicy -ne "Restricted" -and $executionPolicy -ne "AllSigned") {
     Set-ExecutionPolicy -Scope Process -ExecutionPolicy $executionPolicy -Force
 }
+
 
 
 
