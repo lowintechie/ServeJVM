@@ -89,7 +89,6 @@ if (-not (Test-Path -Path $zipFile)) {
 
 # Extract the downloaded zip file
 $extractedDir = "$env:TEMP\ServeJVM-main"
-$extractedDir = "$env:TEMP\ServeJVM-main"
 try {
     Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
     [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFile, $env:TEMP)
