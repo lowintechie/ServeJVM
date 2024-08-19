@@ -88,12 +88,13 @@ if (-not (Test-Path -Path $zipFile)) {
     Error-Exit "The zip file was not downloaded."
 }
 
-# Extract the downloaded zip file
+# Extract the downloaded zip file using System.IO.Compression.ZipFile
 try {
     if (Test-Path $extractedDir) {
         Remove-Item -Recurse -Force $extractedDir
     }
-    Expand-Archive -Path $zipFile -DestinationPath "C:\Temp" -Force
+    Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFile, "C:\Temp")
     Remove-Item -Force $zipFile  # Clean up the zip file
 } catch {
     Log-Message "ERROR: Exception details: $_"
@@ -136,6 +137,7 @@ Log-Message "ServeJVM installed successfully. Restart your terminal or open a ne
 if ($executionPolicy -ne "Restricted" -and $executionPolicy -ne "AllSigned") {
     Set-ExecutionPolicy -Scope Process -ExecutionPolicy $executionPolicy -Force
 }
+
 
 
 
