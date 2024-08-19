@@ -18,7 +18,7 @@ $tmpDir = "$installDir\tmp"
 $versionsDir = "$installDir\versions"
 $logFile = "$installDir\install.log"
 $extractedDir = "C:\ServeJVM-main"
-$branch = "features"  # Specify the branch to clone
+$branch = "main"  # Specify the branch to clone
 
 # Check if script execution is allowed
 $executionPolicy = Get-ExecutionPolicy
