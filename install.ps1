@@ -18,6 +18,7 @@ $tmpDir = "$installDir\tmp"
 $versionsDir = "$installDir\versions"
 $logFile = "$installDir\install.log"
 $extractedDir = "C:\ServeJVM-main"
+$branch = "features"  # Specify the branch to clone
 
 # Check if script execution is allowed
 $executionPolicy = Get-ExecutionPolicy
@@ -72,19 +73,19 @@ function Error-Exit {
 }
 
 # Start the installation process
-Log-Message "Starting ServeJVM installation..."
-Write-Host -ForegroundColor Cyan "Starting ServeJVM installation..."
+Log-Message "Starting ServeJVM installation from branch '$branch'..."
+Write-Host -ForegroundColor Cyan "Starting ServeJVM installation from branch '$branch'..."
 
-# Clone the repository using git
+# Clone the repository using git from the specified branch
 try {
-    Log-Message "Cloning the repository from $repoUrl..."
-    Write-Host -ForegroundColor Yellow "Cloning the ServeJVM repository..."
+    Log-Message "Cloning the repository from $repoUrl (branch: $branch)..."
+    Write-Host -ForegroundColor Yellow "Cloning the ServeJVM repository (branch: $branch)..."
     if (Test-Path $extractedDir) {
         Remove-Item -Recurse -Force $extractedDir
     }
-    git clone $repoUrl $extractedDir | Out-Null
+    git clone --branch $branch $repoUrl $extractedDir | Out-Null
 } catch {
-    Error-Exit "Failed to clone the repository from $repoUrl."
+    Error-Exit "Failed to clone the repository from $repoUrl (branch: $branch)."
 }
 
 # Check if the clone was successful
@@ -123,8 +124,9 @@ try {
     Error-Exit "Failed to update the PATH environment variable."
 }
 
-Log-Message "ServeJVM installed successfully."
-Write-Host -ForegroundColor Green "ServeJVM installed successfully. Restart your terminal or open a new one to start using it."
+Log-Message "ServeJVM installed successfully from branch '$branch'."
+Write-Host -ForegroundColor Green "ServeJVM installed successfully from branch '$branch'. Restart your terminal or open a new one to start using it."
+
 
 
 
