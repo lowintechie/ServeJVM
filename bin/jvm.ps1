@@ -21,7 +21,8 @@
 
 param (
     [string]$command,
-    [string]$version
+    [string]$version,
+    [string]$tool = "java"  # Default tool is Java, but can be set to "gradle"
 )
 
 # Define variables
@@ -61,7 +62,7 @@ function Install-Java {
     param (
         [string]$version
     )
-    $installDir = "$env:USERPROFILE\.serveJVM\versions\$version"
+    $installDir = "$env:USERPROFILE\.serveJVM\versions\java\$version"
     $tmpDir = "$env:USERPROFILE\.serveJVM\tmp"
     $tmpFile = "$tmpDir\corretto-$version.zip"
     $extractDir = "$tmpDir\extracted"
@@ -152,21 +153,115 @@ function Install-Java {
     }
 }
 
-
-
-# Function to switch to a specific Java version
-function Use-Java {
+function Install-Gradle {
     param (
         [string]$version
     )
+    $installDir = "$env:USERPROFILE\.serveJVM\versions\gradle\$version"
+    $tmpDir = "$env:USERPROFILE\.serveJVM\tmp"
+    $tmpFile = "$tmpDir\gradle-$version-bin.zip"
+    $extractDir = "$tmpDir\extracted"
 
-    $installDir = "$env:USERPROFILE\.serveJVM\versions\$version"
+    # Check if the version is already installed
+    if (Test-Path -Path $installDir) {
+        Log-Message "Gradle version $version is already installed at $installDir."
+        Write-Output "Gradle version $version is already installed."
+        return
+    }
+
+    try {
+        # Ensure the tmp and extract directories exist
+        if (-not (Test-Path -Path $tmpDir)) {
+            New-Item -ItemType Directory -Force -Path $tmpDir -ErrorAction Stop | Out-Null
+            Log-Message "Created temporary directory at $tmpDir."
+        }
+        if (-not (Test-Path -Path $extractDir)) {
+            New-Item -ItemType Directory -Force -Path $extractDir -ErrorAction Stop | Out-Null
+            Log-Message "Created extraction directory at $extractDir."
+        }
+
+        # Create the installation directory
+        if (-not (Test-Path -Path $installDir)) {
+            New-Item -ItemType Directory -Force -Path $installDir -ErrorAction Stop | Out-Null
+            Log-Message "Created directory for Gradle $version at $installDir."
+        }
+    } catch {
+        Error-Exit "Failed to create necessary directories for version $version."
+    }
+
+    $url = "https://services.gradle.org/distributions/gradle-$version-bin.zip"
+    $downloadSuccess = $true
+    try {
+        Log-Message "Attempting to download from $url"
+        Invoke-WebRequest -Uri $url -OutFile $tmpFile -ErrorAction Stop
+        Log-Message "Downloaded Gradle $version."
+    } catch {
+        Log-Message "Failed to download Gradle $version from $url. Error details: $_" "ERROR"
+        $downloadSuccess = $false
+    }
+
+    if ($downloadSuccess) {
+        try {
+            Expand-Archive -Path $tmpFile -DestinationPath $extractDir -ErrorAction Stop
+            Log-Message "Extracted Gradle $version to $extractDir."
+
+            # Handle nested directory structure
+            $extractedContent = Get-ChildItem -Path $extractDir | Select-Object -First 1
+            if ($extractedContent -and (Test-Path "$extractDir\$($extractedContent.Name)\bin")) {
+                # Move the contents of the extracted top-level folder to the install directory
+                Move-Item -Path "$extractDir\$($extractedContent.Name)\*" -Destination $installDir -Force
+                Log-Message "Moved extracted files to $installDir."
+            } elseif ($extractedContent) {
+                # If no nested directory structure, move all files directly
+                Move-Item -Path "$extractDir\*" -Destination $installDir -Force
+                Log-Message "Moved extracted files to $installDir."
+            } else {
+                Error-Exit "Extraction failed: no content found in the archive."
+            }
+        } catch {
+            Log-Message "Failed to extract or move Gradle $version." "ERROR"
+            Error-Exit "Extraction or move operation failed. Ensure that the downloaded file is a valid ZIP archive."
+        }
+    } else {
+        # If download failed, still create a placeholder file in the version directory
+        $placeholderFile = "$installDir\DownloadFailed.txt"
+        try {
+            Set-Content -Path $placeholderFile -Value "Download for Gradle version $version failed. Please try again." -ErrorAction Stop
+            Log-Message "Created placeholder file at $placeholderFile."
+        } catch {
+            Log-Message "Failed to create placeholder file for version $version." "ERROR"
+        }
+    }
+
+    try {
+        Remove-Item $tmpFile -Force -ErrorAction Stop
+        Remove-Item $extractDir -Recurse -Force -ErrorAction Stop
+        Log-Message "Cleaned up temporary files."
+    } catch {
+        Log-Message "Failed to remove temporary files." "WARNING"
+    }
+
+    if ($downloadSuccess) {
+        Log-Message "Gradle $version installed successfully."
+    } else {
+        Log-Message "Gradle $version installation was incomplete due to a download failure."
+    }
+}
+
+# Function to switch to a specific Java or Gradle version
+function Use-Tool {
+    param (
+        [string]$tool,
+        [string]$version
+    )
+
+    $installDir = "$env:USERPROFILE\.serveJVM\versions\$tool\$version"
 
     if (Test-Path $installDir) {
         try {
             # Start of the process
-            Log-Message "Setting up Java $version..."
-            Write-Host "Setting up Java $version..." -ForegroundColor Cyan
+            Log-Message "Setting up $tool $version..."
+            Write-Host "Setting up $tool $version..." -ForegroundColor Cyan
 
             $steps = 5
             $currentStep = 0
@@ -179,112 +274,142 @@ function Use-Java {
                 $currentStep++
                 Write-Progress -Activity $activity -Status "$percentComplete% Complete" -PercentComplete $percentComplete
             }
-            # Step 1: Set JAVA_HOME
-            Update-Progress -activity "Setting JAVA_HOME" -percentComplete ($currentStep / $steps * 100)
-            Log-Message "Setting JAVA_HOME to $installDir"
-            [System.Environment]::SetEnvironmentVariable("JAVA_HOME", $installDir, [System.EnvironmentVariableTarget]::User)
 
-            # Step 2: Retrieve current PATH
+            # Set the appropriate environment variables
+            Update-Progress -activity "Setting $tool environment" -percentComplete ($currentStep / $steps * 100)
+            if ($tool -eq "java") {
+                Log-Message "Setting JAVA_HOME to $installDir"
+                [System.Environment]::SetEnvironmentVariable("JAVA_HOME", $installDir, [System.EnvironmentVariableTarget]::User)
+            } elseif ($tool -eq "gradle") {
+                Log-Message "Setting GRADLE_HOME to $installDir"
+                [System.Environment]::SetEnvironmentVariable("GRADLE_HOME", $installDir, [System.EnvironmentVariableTarget]::User)
+            }
+
+            # Retrieve current PATH
             Update-Progress -activity "Retrieving PATH" -percentComplete ($currentStep / $steps * 100)
             Log-Message "Retrieving PATH."
             $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::User)
 
-            # Step 3: Clean up old PATH entries
+            # Clean up old PATH entries
             Update-Progress -activity "Cleaning old PATH entries" -percentComplete ($currentStep / $steps * 100)
             Log-Message "Cleaning old PATH entries."
-            $newPath = ($currentPath -split ';') -notmatch [regex]::Escape('\.serveJVM\versions\\') -join ';'
+            $newPath = ($currentPath -split ';') -notmatch [regex]::Escape("\.serveJVM\versions\\") -join ';'
 
-            # Step 4: Update PATH with new Java version
+            # Update PATH with the new tool version
             Update-Progress -activity "Updating PATH" -percentComplete ($currentStep / $steps * 100)
             Log-Message "Adding $installDir\bin to PATH."
             $newPath = "$installDir\bin;$newPath"
             [System.Environment]::SetEnvironmentVariable("Path", $newPath, [System.EnvironmentVariableTarget]::User)
 
-            # Step 5: Update session variables
+            # Update session variables
             Update-Progress -activity "Updating session variables" -percentComplete ($currentStep / $steps * 100)
-            Log-Message "Updating session JAVA_HOME and PATH."
-            $env:JAVA_HOME = $installDir
-            $env:Path = "$installDir\bin;" + ($env:Path -replace [regex]::Escape("$env:JAVA_HOME\bin;"), "")
+            if ($tool -eq "java") {
+                Log-Message "Updating session JAVA_HOME and PATH."
+                $env:JAVA_HOME = $installDir
+                $env:Path = "$installDir\bin;" + ($env:Path -replace [regex]::Escape("$env:JAVA_HOME\bin;"), "")
+            } elseif ($tool -eq "gradle") {
+                Log-Message "Updating session GRADLE_HOME and PATH."
+                $env:GRADLE_HOME = $installDir
+                $env:Path = "$installDir\bin;" + ($env:Path -replace [regex]::Escape("$env:GRADLE_HOME\bin;"), "")
+            }
 
             Write-Progress -Activity "Setup Complete" -Status "100% Complete" -PercentComplete 100
-            Write-Host "Switched to Java $version successfully." -ForegroundColor Green
-            Log-Message "Switched to Java $version."
-            Write-Output "Switched to Java $version. Please restart your terminal session or run 'refreshenv' if using a tool like Chocolatey."
+            Write-Host "Switched to $tool $version successfully." -ForegroundColor Green
+            Log-Message "Switched to $tool $version."
+            Write-Output "Switched to $tool $version. Please restart your terminal session or run 'refreshenv' if using a tool like Chocolatey."
         } catch {
-            Write-Host "Failed to set environment variables for Java $version." -ForegroundColor Red
-            Log-Message "Failed to set variables for Java $version. Error: $_" "ERROR"
+            Write-Host "Failed to set environment variables for $tool $version." -ForegroundColor Red
+            Log-Message "Failed to set variables for $tool $version. Error: $_" "ERROR"
             Error-Exit "Failed to set environment variables."
         }
     } else {
-        Write-Host "Java version $version is not installed." -ForegroundColor Red
-        Log-Message "Java version $version is not installed." "ERROR"
-        Error-Exit "Java version $version is not installed."
+        Write-Host "$tool version $version is not installed." -ForegroundColor Red
+        Log-Message "$tool version $version is not installed." "ERROR"
+        Error-Exit "$tool version $version is not installed."
     }
 }
 
 # List installed versions
-function List-Java {
+function List-Tool {
+    param (
+        [string]$tool
+    )
+
     try {
-        $versions = Get-ChildItem -Directory "$env:USERPROFILE\.serveJVM\versions" | ForEach-Object { $_.Name }
+        $versions = Get-ChildItem -Directory "$env:USERPROFILE\.serveJVM\versions\$tool" | ForEach-Object { $_.Name }
         if ($versions) {
-            Write-Host "📂 Installed Java Versions:" -ForegroundColor Cyan
+            Write-Host "📂 Installed $tool Versions:" -ForegroundColor Cyan
             $versions | ForEach-Object {
                 Write-Host "  ➡️ $($_)" -ForegroundColor Green
             }
         } else {
-            Write-Host "⚠️ No Java versions installed." -ForegroundColor Yellow
+            Write-Host "⚠️ No $tool versions installed." -ForegroundColor Yellow
         }
     } catch {
-        Write-Host "❌ Failed to list Java versions." -ForegroundColor Red
-        Log-Message "Error listing Java versions. Error: $_" "ERROR"
-        Error-Exit "Failed to list Java versions."
+        Write-Host "❌ Failed to list $tool versions." -ForegroundColor Red
+        Log-Message "Error listing $tool versions. Error: $_" "ERROR"
+        Error-Exit "Failed to list $tool versions."
     }
-} 
+}
 
-
-# Uninstall a specific Java version
-function Uninstall-Java {
+# Uninstall a specific Java or Gradle version
+function Uninstall-Tool {
     param (
+        [string]$tool,
         [string]$version
     )
-    $installDir = "$env:USERPROFILE\.serveJVM\versions\$version"
+    $installDir = "$env:USERPROFILE\.serveJVM\versions\$tool\$version"
 
     if (Test-Path $installDir) {
         try {
             # Remove the installation directory
             Remove-Item -Recurse -Force $installDir -ErrorAction Stop
-            Log-Message "Java $version uninstalled successfully."
-            Write-Output "Java $version uninstalled successfully."
+            Log-Message "$tool $version uninstalled successfully."
+            Write-Output "$tool $version uninstalled successfully."
 
-            # Clear JAVA_HOME if it is pointing to the uninstalled version
-            $currentJavaHome = [System.Environment]::GetEnvironmentVariable("JAVA_HOME", [System.EnvironmentVariableTarget]::User)
-            if ($currentJavaHome -eq $installDir) {
-                [System.Environment]::SetEnvironmentVariable("JAVA_HOME", $null, [System.EnvironmentVariableTarget]::User)
-                Log-Message "Cleared JAVA_HOME environment variable."
-                Write-Output "Cleared JAVA_HOME environment variable."
+            # Clear environment variables if they point to the uninstalled version
+            if ($tool -eq "java") {
+                $currentJavaHome = [System.Environment]::GetEnvironmentVariable("JAVA_HOME", [System.EnvironmentVariableTarget]::User)
+                if ($currentJavaHome -eq $installDir) {
+                    [System.Environment]::SetEnvironmentVariable("JAVA_HOME", $null, [System.EnvironmentVariableTarget]::User)
+                    Log-Message "Cleared JAVA_HOME environment variable."
+                    Write-Output "Cleared JAVA_HOME environment variable."
+                }
+            } elseif ($tool -eq "gradle") {
+                $currentGradleHome = [System.Environment]::GetEnvironmentVariable("GRADLE_HOME", [System.EnvironmentVariableTarget]::User)
+                if ($currentGradleHome -eq $installDir) {
+                    [System.Environment]::SetEnvironmentVariable("GRADLE_HOME", $null, [System.EnvironmentVariableTarget]::User)
+                    Log-Message "Cleared GRADLE_HOME environment variable."
+                    Write-Output "Cleared GRADLE_HOME environment variable."
+                }
             }
 
-            # Remove the Java bin directory from the PATH variable
+            # Remove the tool's bin directory from the PATH variable
             $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::User)
             $newPath = ($currentPath -split ';') -notmatch [regex]::Escape("$installDir\bin") -join ';'
             [System.Environment]::SetEnvironmentVariable("Path", $newPath, [System.EnvironmentVariableTarget]::User)
             Log-Message "Removed $installDir\bin from PATH environment variable."
             Write-Output "Removed $installDir\bin from PATH environment variable."
 
-            if ($env:JAVA_HOME -eq $installDir) {
+            if ($tool -eq "java" -and $env:JAVA_HOME -eq $installDir) {
                 $env:JAVA_HOME = $null
                 $env:Path = $env:Path -replace [regex]::Escape("$installDir\bin;"), ""
                 Log-Message "Cleared JAVA_HOME and updated PATH for the current session."
                 Write-Output "Cleared JAVA_HOME and updated PATH for the current session."
+            } elseif ($tool -eq "gradle" -and $env:GRADLE_HOME -eq $installDir) {
+                $env:GRADLE_HOME = $null
+                $env:Path = $env:Path -replace [regex]::Escape("$installDir\bin;"), ""
+                Log-Message "Cleared GRADLE_HOME and updated PATH for the current session."
+                Write-Output "Cleared GRADLE_HOME and updated PATH for the current session."
             } else {
                 Log-Message "No action needed for session variables."
             }
         } catch {
-            Log-Message "Failed to uninstall Java $version. Error: $_" "ERROR"
-            Error-Exit "Failed to uninstall Java $version. Please ensure the directory is not in use."
+            Log-Message "Failed to uninstall $tool $version. Error: $_" "ERROR"
+            Error-Exit "Failed to uninstall $tool $version. Please ensure the directory is not in use."
         }
     } else {
-        Error-Exit "Java version $version is not installed."
+        Error-Exit "$tool version $version is not installed."
     }
 }
 
@@ -341,16 +466,20 @@ function Show-Usage {
     Write-Host "Usage: jvm <command> [...args]" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Commands:" -ForegroundColor Cyan
-    Write-Host "  install   [command]               Install the specified Java version." -ForegroundColor Green
-    Write-Host "  use       [command]               Switch to the specified Java version." -ForegroundColor Green
-    Write-Host "  list      [command]               List all installed Java versions." -ForegroundColor Green
-    Write-Host "  uninstall [command]               Uninstall the specified Java version." -ForegroundColor Green
+    Write-Host "  install   [tool] [version]      Install the specified tool version." -ForegroundColor Green
+    Write-Host "  use       [tool] [version]      Switch to the specified tool version." -ForegroundColor Green
+    Write-Host "  list      [tool]                List all installed versions of the specified tool." -ForegroundColor Green
+    Write-Host "  uninstall [tool] [version]      Uninstall the specified tool version." -ForegroundColor Green
     Write-Host ""
     Write-Host "Example:" -ForegroundColor Cyan
-    Write-Host "  jvm install 11" -ForegroundColor Yellow
-    Write-Host "  jvm use 11" -ForegroundColor Yellow
-    Write-Host "  jvm list" -ForegroundColor Yellow
-    Write-Host "  jvm uninstall 11" -ForegroundColor Yellow
+    Write-Host "  jvm install java 11" -ForegroundColor Yellow
+    Write-Host "  jvm use java 11" -ForegroundColor Yellow
+    Write-Host "  jvm list java" -ForegroundColor Yellow
+    Write-Host "  jvm uninstall java 11" -ForegroundColor Yellow
+    Write-Host "  jvm install gradle 6.8" -ForegroundColor Yellow
+    Write-Host "  jvm use gradle 6.8" -ForegroundColor Yellow
+    Write-Host "  jvm list gradle" -ForegroundColor Yellow
+    Write-Host "  jvm uninstall gradle 6.8" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Learn more about ServeJVM: https://github.com/lowinn/ServeJVM/blob/main/README.md" -ForegroundColor Magenta
 }
@@ -358,35 +487,47 @@ function Show-Usage {
 # Enhanced CLI Interface
 switch ($command) {
     "install" {
-        if ($version) {
-            Write-Host "Installing Java $version..." -ForegroundColor Cyan
-            Install-Java -version $version
+        if ($version -and $tool) {
+            Write-Host "Installing $tool $version..." -ForegroundColor Cyan
+            if ($tool -eq "java") {
+                Install-Java -version $version
+            } elseif ($tool -eq "gradle") {
+                Install-Gradle -version $version
+            } else {
+                Write-Host "Unknown tool: $tool" -ForegroundColor Red
+                Show-Usage
+            }
             Write-Host "Installation complete." -ForegroundColor Green
         } else {
-            Write-Host "Error: Missing version parameter." -ForegroundColor Red
+            Write-Host "Error: Missing version or tool parameter." -ForegroundColor Red
             Show-Usage
         }
     }
     "use" {
-        if ($version) {
-            Write-Host "Switching to Java $version..." -ForegroundColor Cyan
-            Use-Java -version $version
-            Write-Host "Switched to Java $version." -ForegroundColor Green
+        if ($version -and $tool) {
+            Write-Host "Switching to $tool $version..." -ForegroundColor Cyan
+            Use-Tool -tool $tool -version $version
+            Write-Host "Switched to $tool $version." -ForegroundColor Green
         } else {
-            Write-Host "Error: Missing version parameter." -ForegroundColor Red
+            Write-Host "Error: Missing version or tool parameter." -ForegroundColor Red
             Show-Usage
         }
     }
     "list" {
-        List-Java
+        if ($tool) {
+            List-Tool -tool $tool
+        } else {
+            Write-Host "Error: Missing tool parameter." -ForegroundColor Red
+            Show-Usage
+        }
     }
     "uninstall" {
-        if ($version) {
-            Write-Host "Uninstalling Java $version..." -ForegroundColor Cyan
-            Uninstall-Java -version $version
+        if ($version -and $tool) {
+            Write-Host "Uninstalling $tool $version..." -ForegroundColor Cyan
+            Uninstall-Tool -tool $tool -version $version
             Write-Host "Uninstallation complete." -ForegroundColor Green
         } else {
-            Write-Host "Error: Missing version parameter." -ForegroundColor Red
+            Write-Host "Error: Missing version or tool parameter." -ForegroundColor Red
             Show-Usage
         }
     }
@@ -398,5 +539,6 @@ switch ($command) {
         Show-Usage
     }
 }
+
 
 
