@@ -66,6 +66,13 @@ function Install-Java {
     $tmpFile = "$tmpDir\corretto-$version.zip"
     $extractDir = "$tmpDir\extracted"
 
+    # Check if the version is already installed
+    if (Test-Path -Path $installDir) {
+        Log-Message "Java version $version is already installed at $installDir."
+        Write-Output "Java version $version is already installed."
+        return
+    }
+
     try {
         # Ensure the tmp and extract directories exist
         if (-not (Test-Path -Path $tmpDir)) {
@@ -87,35 +94,47 @@ function Install-Java {
     }
 
     $url = "https://corretto.aws/downloads/latest/amazon-corretto-$version-x64-windows-jdk.zip"
+    $downloadSuccess = $true
     try {
         Log-Message "Attempting to download from $url"
         Invoke-WebRequest -Uri $url -OutFile $tmpFile -ErrorAction Stop
         Log-Message "Downloaded Java $version."
     } catch {
         Log-Message "Failed to download Java $version from $url. Error details: $_" "ERROR"
-        Error-Exit "Check if the Java version $version exists and the URL is correct."
+        $downloadSuccess = $false
     }
 
-    try {
-        Expand-Archive -Path $tmpFile -DestinationPath $extractDir -ErrorAction Stop
-        Log-Message "Extracted Java $version to $extractDir."
+    if ($downloadSuccess) {
+        try {
+            Expand-Archive -Path $tmpFile -DestinationPath $extractDir -ErrorAction Stop
+            Log-Message "Extracted Java $version to $extractDir."
 
-        # Handle nested directory structure
-        $extractedContent = Get-ChildItem -Path $extractDir | Select-Object -First 1
-        if ($extractedContent -and (Test-Path "$extractDir\$($extractedContent.Name)\bin")) {
-            # Move the contents of the extracted top-level folder to the install directory
-            Move-Item -Path "$extractDir\$($extractedContent.Name)\*" -Destination $installDir -Force
-            Log-Message "Moved extracted files to $installDir."
-        } elseif ($extractedContent) {
-            # If no nested directory structure, move all files directly
-            Move-Item -Path "$extractDir\*" -Destination $installDir -Force
-            Log-Message "Moved extracted files to $installDir."
-        } else {
-            Error-Exit "Extraction failed: no content found in the archive."
+            # Handle nested directory structure
+            $extractedContent = Get-ChildItem -Path $extractDir | Select-Object -First 1
+            if ($extractedContent -and (Test-Path "$extractDir\$($extractedContent.Name)\bin")) {
+                # Move the contents of the extracted top-level folder to the install directory
+                Move-Item -Path "$extractDir\$($extractedContent.Name)\*" -Destination $installDir -Force
+                Log-Message "Moved extracted files to $installDir."
+            } elseif ($extractedContent) {
+                # If no nested directory structure, move all files directly
+                Move-Item -Path "$extractDir\*" -Destination $installDir -Force
+                Log-Message "Moved extracted files to $installDir."
+            } else {
+                Error-Exit "Extraction failed: no content found in the archive."
+            }
+        } catch {
+            Log-Message "Failed to extract or move Java $version." "ERROR"
+            Error-Exit "Extraction or move operation failed. Ensure that the downloaded file is a valid ZIP archive."
         }
-    } catch {
-        Log-Message "Failed to extract or move Java $version." "ERROR"
-        Error-Exit "Extraction or move operation failed. Ensure that the downloaded file is a valid ZIP archive."
+    } else {
+        # If download failed, still create a placeholder file in the version directory
+        $placeholderFile = "$installDir\DownloadFailed.txt"
+        try {
+            Set-Content -Path $placeholderFile -Value "Download for Java version $version failed. Please try again." -ErrorAction Stop
+            Log-Message "Created placeholder file at $placeholderFile."
+        } catch {
+            Log-Message "Failed to create placeholder file for version $version." "ERROR"
+        }
     }
 
     try {
@@ -126,8 +145,13 @@ function Install-Java {
         Log-Message "Failed to remove temporary files." "WARNING"
     }
 
-    Log-Message "Java $version installed successfully."
+    if ($downloadSuccess) {
+        Log-Message "Java $version installed successfully."
+    } else {
+        Log-Message "Java $version installation was incomplete due to a download failure."
+    }
 }
+
 
 
 # Function to switch to a specific Java version
