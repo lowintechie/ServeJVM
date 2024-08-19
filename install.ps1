@@ -11,14 +11,13 @@
     Version: 1.1
     Date: 2024-08-16
 #>
-$repoUrl = "https://github.com/lowinn/ServeJVM/archive/refs/heads/main.zip"
+$repoUrl = "https://github.com/lowinn/ServeJVM.git"
 $installDir = "$env:USERPROFILE\.serveJVM"
 $binDir = "$installDir\bin"
 $tmpDir = "$installDir\tmp"
 $versionsDir = "$installDir\versions"
 $logFile = "$installDir\install.log"
-$zipFile = "$env:TEMP\ServeJVM.zip"
-$extractedDir = "C:\Temp\ServeJVM-main"
+$extractedDir = "$env:TEMP\ServeJVM-main"
 
 # Check if script execution is allowed
 $executionPolicy = Get-ExecutionPolicy
@@ -75,30 +74,20 @@ function Error-Exit {
 # Start the installation process
 Log-Message "Starting ServeJVM installation..."
 
-# Download the repository zip file using Invoke-WebRequest
+# Clone the repository using git
 try {
-    Log-Message "Attempting to download using Invoke-WebRequest..."
-    Invoke-WebRequest -Uri $repoUrl -OutFile $zipFile
-} catch {
-    Error-Exit "Failed to download the repository from $repoUrl."
-}
-
-# Check if the zip file was downloaded successfully
-if (-not (Test-Path -Path $zipFile)) {
-    Error-Exit "The zip file was not downloaded."
-}
-
-# Extract the downloaded zip file using System.IO.Compression.ZipFile
-try {
+    Log-Message "Cloning the repository from $repoUrl..."
     if (Test-Path $extractedDir) {
         Remove-Item -Recurse -Force $extractedDir
     }
-    Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFile, "C:\Temp")
-    Remove-Item -Force $zipFile  # Clean up the zip file
+    git clone $repoUrl $extractedDir
 } catch {
-    Log-Message "ERROR: Exception details: $_"
-    Error-Exit "Failed to extract the repository from $zipFile."
+    Error-Exit "Failed to clone the repository from $repoUrl."
+}
+
+# Check if the clone was successful
+if (-not (Test-Path -Path "$extractedDir\.git")) {
+    Error-Exit "The repository was not cloned successfully."
 }
 
 # Copy only the required files and directories to the install directory
@@ -109,14 +98,14 @@ try {
     # Copy the version.txt file
     Copy-Item -Path "$extractedDir\version.txt" -Destination $installDir -Force
 } catch {
-    Error-Exit "Failed to copy necessary files from the extracted repository."
+    Error-Exit "Failed to copy necessary files from the cloned repository."
 }
 
-# Clean up the extracted directory
+# Clean up the cloned repository directory
 try {
     Remove-Item -Recurse -Force $extractedDir
 } catch {
-    Log-Message "Failed to clean up the extracted directory. $_"
+    Log-Message "Failed to clean up the cloned repository directory. $_"
 }
 
 # Update PATH in the user environment
@@ -137,6 +126,7 @@ Log-Message "ServeJVM installed successfully. Restart your terminal or open a ne
 if ($executionPolicy -ne "Restricted" -and $executionPolicy -ne "AllSigned") {
     Set-ExecutionPolicy -Scope Process -ExecutionPolicy $executionPolicy -Force
 }
+
 
 
 
