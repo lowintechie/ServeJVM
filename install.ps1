@@ -88,12 +88,12 @@ if (-not (Test-Path -Path $zipFile)) {
 }
 
 # Extract the downloaded zip file
-$extractedDir = "$env:TEMP\ServeJVM-main"
+$extractedDir = "C:\Temp\ServeJVM-main"
 try {
-    Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($zipFile, $env:TEMP)
+    Expand-Archive -Path $zipFile -DestinationPath "C:\Temp" -Force
     Remove-Item -Force $zipFile  # Clean up the zip file
 } catch {
+    Log-Message "ERROR: Exception details: $_"
     Error-Exit "Failed to extract the repository from $zipFile."
 }
 
