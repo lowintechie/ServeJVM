@@ -34,8 +34,10 @@ error_exit() {
     exit 1
 }
 
-# Ensure required directories exist
+# Ensure required directories exist with correct permissions
 mkdir -p "$VERSIONS_DIR" "$TMP_DIR" "$DOWNLOAD_DIR" || error_exit "Failed to create necessary directories."
+chmod -R 755 "$INSTALL_DIR" || error_exit "Failed to set permissions for $INSTALL_DIR."
+chmod -R 755 "$DOWNLOAD_DIR" || error_exit "Failed to set permissions for $DOWNLOAD_DIR."
 
 # Function to install Java
 install_java() {
@@ -59,16 +61,13 @@ install_java() {
         error_exit "Failed to download Java $version from $download_url."
     fi
 
-    # Verify the downloaded file is in gzip format
-    if file "$archive_file" | grep -q 'gzip compressed data'; then
-        log_message "File verified as gzip format."
-    else
-        error_exit "The downloaded file is not in gzip format."
-    fi
+    # Set permissions to ensure the file can be extracted
+    chmod 644 "$archive_file" || error_exit "Failed to set permissions for the downloaded file."
 
     # Extract the file
     if tar -xzf "$archive_file" -C "$TMP_DIR" 2>>"$LOG_FILE"; then
         mv "$TMP_DIR/$(ls "$TMP_DIR")" "$version_dir"
+        chmod -R 755 "$version_dir" || error_exit "Failed to set permissions for the extracted files."
         log_message "Extracted Java $version."
     else
         error_exit "Failed to extract Java $version."
