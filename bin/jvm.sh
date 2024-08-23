@@ -69,6 +69,7 @@ install_java() {
     echo "Java $version installed successfully."
 }
 
+
 # Function to switch Java version
 use_java() {
     version=$1
