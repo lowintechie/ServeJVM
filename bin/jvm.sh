@@ -49,14 +49,17 @@ install_java() {
         return
     fi
 
-    # Download and extract Java version
-    download_url="$DOWNLOAD_URL_PREFIX-$version-linux-x64-jdk.$ARCHIVE_EXTENSION"
+    # Use the correct URL
+    download_url="https://corretto.aws/downloads/latest/amazon-corretto-$version-linux-x64-jdk.$ARCHIVE_EXTENSION"
+
+    # Download the file
     if curl -Lo "$archive_file" "$download_url" 2>>"$LOG_FILE"; then
         log_message "Downloaded Java $version."
     else
         error_exit "Failed to download Java $version from $download_url."
     fi
 
+    # Extract the file
     if tar -xzf "$archive_file" -C "$TMP_DIR" 2>>"$LOG_FILE"; then
         mv "$TMP_DIR/$(ls "$TMP_DIR")" "$version_dir"
         log_message "Extracted Java $version."
@@ -68,6 +71,7 @@ install_java() {
     log_message "Java $version installed successfully."
     echo "Java $version installed successfully."
 }
+
 
 
 # Function to switch Java version
