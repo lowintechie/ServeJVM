@@ -14,8 +14,13 @@
 #     Date: 2024-08-16
 # -----------------------------------------------------------------------------
 
-# Log file location
+# Define constants
 LOG_FILE="$HOME/.jvm_manager/jvm-manager.log"
+INSTALL_DIR="$HOME/.jvm_manager"
+VERSIONS_DIR="$INSTALL_DIR/versions"
+TMP_DIR="$INSTALL_DIR/tmp"
+DOWNLOAD_URL_PREFIX="https://corretto.aws/downloads/latest/amazon-corretto"
+ARCHIVE_EXTENSION="tar.gz"
 
 # Function to log messages
 log_message() {
@@ -29,72 +34,110 @@ error_exit() {
     exit 1
 }
 
-# Detect OS function
-detect_os() {
-    case "$(uname -s)" in
-        Linux*)     os=Linux;;
-        Darwin*)    os=Mac;;
-        CYGWIN*)    os=Cygwin;;
-        MINGW*)     os=MinGw;;
-        *)          os="UNKNOWN:${unameOut}"
-    esac
-    echo ${os}
-}
+# Ensure required directories exist
+mkdir -p "$VERSIONS_DIR" "$TMP_DIR" || error_exit "Failed to create necessary directories."
 
-# Install Java function
+# Function to install Java
 install_java() {
     version=$1
-    mkdir -p "$HOME/.jvm_manager/versions/$version" || error_exit "Failed to create directory for version $version."
-    if curl -o "$HOME/.jvm_manager/tmp/openjdk-$version.tar.gz" "https://corretto.aws/downloads/latest/amazon-corretto-$version-x64-windows-jdk.zip" 2>>"$LOG_FILE"; then
-        log_message "Downloaded Java $version."
-    else
-        error_exit "Failed to download Java $version."
+    version_dir="$VERSIONS_DIR/$version"
+    archive_file="$TMP_DIR/openjdk-$version.$ARCHIVE_EXTENSION"
+
+    if [ -d "$version_dir" ]; then
+        log_message "Java version $version is already installed."
+        echo "Java version $version is already installed."
+        return
     fi
 
-    if tar -xzf "$HOME/.jvm_manager/tmp/openjdk-$version.tar.gz" -C "$HOME/.jvm_manager/versions/$version" --strip-components=1 2>>"$LOG_FILE"; then
+    # Download and extract Java version
+    download_url="$DOWNLOAD_URL_PREFIX-$version-linux-x64-jdk.$ARCHIVE_EXTENSION"
+    if curl -Lo "$archive_file" "$download_url" 2>>"$LOG_FILE"; then
+        log_message "Downloaded Java $version."
+    else
+        error_exit "Failed to download Java $version from $download_url."
+    fi
+
+    if tar -xzf "$archive_file" -C "$TMP_DIR" 2>>"$LOG_FILE"; then
+        mv "$TMP_DIR/$(ls "$TMP_DIR")" "$version_dir"
         log_message "Extracted Java $version."
     else
         error_exit "Failed to extract Java $version."
     fi
 
-    rm "$HOME/.jvm_manager/tmp/openjdk-$version.tar.gz"
+    rm -f "$archive_file"
     log_message "Java $version installed successfully."
+    echo "Java $version installed successfully."
 }
 
-# Use Java function
+# Function to switch Java version
 use_java() {
     version=$1
-    if [ -d "$HOME/.jvm_manager/versions/$version" ]; then
-        export JAVA_HOME="$HOME/.jvm_manager/versions/$version"
+    version_dir="$VERSIONS_DIR/$version"
+
+    if [ -d "$version_dir" ]; then
+        export JAVA_HOME="$version_dir"
         export PATH="$JAVA_HOME/bin:$PATH"
         log_message "Switched to Java $version."
+        echo "Switched to Java $version."
     else
         error_exit "Java version $version is not installed."
     fi
 }
 
-# List installed versions
+# Function to list installed Java versions
 list_java() {
-    if [ -d "$HOME/.jvm_manager/versions/" ]; then
-        ls "$HOME/.jvm_manager/versions/"
+    if [ -d "$VERSIONS_DIR" ]; then
+        ls "$VERSIONS_DIR"
         log_message "Listed installed Java versions."
     else
         log_message "No Java versions installed."
+        echo "No Java versions installed."
     fi
 }
 
-# Uninstall Java version
+# Function to uninstall Java version
 uninstall_java() {
     version=$1
-    if [ -d "$HOME/.jvm_manager/versions/$version" ]; then
-        rm -rf "$HOME/.jvm_manager/versions/$version"
+    version_dir="$VERSIONS_DIR/$version"
+
+    if [ -d "$version_dir" ]; then
+        rm -rf "$version_dir"
         log_message "Java $version uninstalled."
+        echo "Java $version uninstalled."
     else
         error_exit "Java version $version is not installed."
     fi
 }
 
- CLI Interface
+# Function to display current Java version
+current_java() {
+    if [ -z "$JAVA_HOME" ]; then
+        echo "No Java version is currently active."
+        log_message "No active Java version found."
+    else
+        echo "Current active Java version: $JAVA_HOME"
+        log_message "Displayed current active Java version: $JAVA_HOME."
+    fi
+}
+
+# Function to show help/usage information
+show_help() {
+    echo "Usage: jvm <command> [...args]"
+    echo
+    echo "Commands:"
+    echo "  install    <version>           Install a specific Java version (e.g., jvm install 11)"
+    echo "  use        <version>           Switch to a specific Java version (e.g., jvm use 17)"
+    echo "  list                           List all installed Java versions"
+    echo "  uninstall  <version>           Uninstall a specific Java version (e.g., jvm uninstall 8)"
+    echo "  current                        Show the currently active Java version"
+    echo
+    echo "  help                           Show this help text"
+    echo
+    echo "Learn more about ServeJVM:       https://github.com/lowinn/ServeJVM/blob/main/README.md"
+    echo "Join our Community:              https://github.com/lowinn/ServeJVM/discussions"
+}
+
+# CLI Interface
 case "$1" in
     install)
         if [ -z "$2" ]; then
@@ -131,29 +174,11 @@ case "$1" in
         ;;
 
     current)
-        if [ -z "$JAVA_HOME" ]; then
-            echo "No Java version is currently active."
-            log_message "No active Java version found."
-        else
-            echo "Current active Java version: $JAVA_HOME"
-            log_message "Displayed current active Java version: $JAVA_HOME."
-        fi
+        current_java
         ;;
 
     help|--help|-h)
-        echo "Usage: jvm <command> [...args]"
-        echo
-        echo "Commands:"
-        echo "  install    11                  Install a specific Java version (e.g., jvm install 11)"
-        echo "  use        17                  Switch to a specific Java version (e.g., jvm use 17)"
-        echo "  list                            List all installed Java versions"
-        echo "  uninstall  8                   Uninstall a specific Java version (e.g., jvm uninstall 8)"
-        echo "  current                         Show the currently active Java version"
-        echo
-        echo "  help                            Show this help text"
-        echo
-        echo "Learn more about ServeJVM:       https://github.com/lowinn/ServeJVM/blob/main/README.md"
-        echo "Join our Community:              https://github.com/lowinn/ServeJVM/discussions"
+        show_help
         ;;
 
     *)
