@@ -13,14 +13,14 @@
 #     Version: 1.0
 #     Date: 2024-08-16
 # -----------------------------------------------------------------------------
-
 # Define constants
 LOG_FILE="$HOME/.jvm_manager/jvm-manager.log"
 INSTALL_DIR="$HOME/.jvm_manager"
 VERSIONS_DIR="$INSTALL_DIR/versions"
 TMP_DIR="$INSTALL_DIR/tmp"
-DOWNLOAD_URL_PREFIX="https://corretto.aws/downloads/latest/amazon-corretto"
+DOWNLOAD_DIR="$HOME/Downloads"
 ARCHIVE_EXTENSION="tar.gz"
+DOWNLOAD_URL_PREFIX="https://corretto.aws/downloads/latest/amazon-corretto"
 
 # Function to log messages
 log_message() {
@@ -35,13 +35,13 @@ error_exit() {
 }
 
 # Ensure required directories exist
-mkdir -p "$VERSIONS_DIR" "$TMP_DIR" || error_exit "Failed to create necessary directories."
+mkdir -p "$VERSIONS_DIR" "$TMP_DIR" "$DOWNLOAD_DIR" || error_exit "Failed to create necessary directories."
 
 # Function to install Java
 install_java() {
     version=$1
     version_dir="$VERSIONS_DIR/$version"
-    archive_file="$TMP_DIR/openjdk-$version.$ARCHIVE_EXTENSION"
+    archive_file="$DOWNLOAD_DIR/openjdk-$version.$ARCHIVE_EXTENSION"
 
     if [ -d "$version_dir" ]; then
         log_message "Java version $version is already installed."
@@ -50,13 +50,20 @@ install_java() {
     fi
 
     # Use the correct URL
-    download_url="https://corretto.aws/downloads/latest/amazon-corretto-$version-linux-x64-jdk.$ARCHIVE_EXTENSION"
+    download_url="$DOWNLOAD_URL_PREFIX-$version-linux-x64-jdk.$ARCHIVE_EXTENSION"
 
     # Download the file
     if curl -Lo "$archive_file" "$download_url" 2>>"$LOG_FILE"; then
         log_message "Downloaded Java $version."
     else
         error_exit "Failed to download Java $version from $download_url."
+    fi
+
+    # Verify the downloaded file is in gzip format
+    if file "$archive_file" | grep -q 'gzip compressed data'; then
+        log_message "File verified as gzip format."
+    else
+        error_exit "The downloaded file is not in gzip format."
     fi
 
     # Extract the file
@@ -71,8 +78,6 @@ install_java() {
     log_message "Java $version installed successfully."
     echo "Java $version installed successfully."
 }
-
-
 
 # Function to switch Java version
 use_java() {
